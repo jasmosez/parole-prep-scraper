@@ -10,42 +10,14 @@
 
 import 'dotenv/config';
 import Airtable from 'airtable';
+import { lookupDIN } from './util.js';
 
-
-console.log(process.env.AIRTABLE_API_KEY)
-
+// Initialize Airtable
 Airtable.configure({ 
     endpointUrl: 'https://api.airtable.com',
     apiKey: process.env.AIRTABLE_API_KEY 
 });
-const base = Airtable.base('appqmaQOPMbOcRutu');
-
-
-const lookupDIN = async (din) => {
-    // Lookup DIN in NYC DOCCS    
-        try{
-            const resp = await fetch("https://nysdoccslookup.doccs.ny.gov/IncarceratedPerson/SearchByDin", {
-                "headers": {
-                  "accept": "*/*",
-                  "accept-language": "en-US,en;q=0.9",
-                  "content-type": "application/json; charset=utf-8",
-                  "sec-ch-ua": "\"Chromium\";v=\"130\", \"Google Chrome\";v=\"130\", \"Not?A_Brand\";v=\"99\"",
-                  "sec-ch-ua-mobile": "?0",
-                  "sec-ch-ua-platform": "\"macOS\"",
-                  "sec-fetch-dest": "empty",
-                  "sec-fetch-site": "same-origin",
-                },
-                "body": "\"07A4571\"",
-                "method": "POST"
-              });
-            // const resp = await fetch('https://rickandmortyapi.com/api/character/476')
-            const data = await resp.json()
-            console.log(data)
-        } catch(err){
-            console.log(err)
-
-        }
-}
+const base = Airtable.base(process.env.AIRTABLE_BASE_ID);
 
 
 base('Table 1').select({
