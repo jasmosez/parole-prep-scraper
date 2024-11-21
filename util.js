@@ -48,10 +48,7 @@ export const lookupDIN = async (din) => {
         --data-raw '"${din}"'`]
 
     try{
-        const data = await curlRequest(curlOptions)
-
-        // TODO: remove console.log
-        console.log(data)
+        return await curlRequest(curlOptions)
     } catch(err){
         console.log(err)
     }

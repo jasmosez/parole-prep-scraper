@@ -19,6 +19,17 @@ Airtable.configure({
 });
 const base = Airtable.base(process.env.AIRTABLE_BASE_ID);
 
+// Map DOCCS data to Airtable fields
+const FIELD_MAP = {
+    'din': 'DIN',
+    'name': 'Name',
+    'age': 'Age',
+    'facility': 'Facility',
+    'paroleHearingDate': 'Parole Interview Date',
+    'paroleEligDate': 'Parole Eligibility Date',
+    'status': 'Status',
+}
+
 
 base('Table 1').select({
     // Selecting the first 3 records in Grid view:
@@ -27,19 +38,33 @@ base('Table 1').select({
 }).eachPage(function page(records, fetchNextPage) {
     // This function (`page`) will get called for each page of records.
 
-    records.forEach(function(record) {
+    records.forEach(async function(record) {
         const din = record.get('DIN');
         console.log('Retrieved', din);
-        lookupDIN(din)
+        const doccsData = await lookupDIN(din)
+
+        if (doccsData.error) {
+            console.error('Error fetching data for', din);
+            return;
+        }
 
         // update record
-        // record.patchUpdate({ 'Age': '33' }, function (err) {
-        //     if (err) {
-        //         console.error(err);
-        //         return;
-        //     }
-        //     console.log('Updated', record.get('DIN'));
-        // }   );
+        const {age, paroleEligDate, paroleHearingDate, status, facility} = doccsData;
+        const newDetails = {
+            [FIELD_MAP.age]: age.match(/\d+/)[0],
+            [FIELD_MAP.paroleEligDate]: paroleEligDate,
+            [FIELD_MAP.paroleHearingDate]: paroleHearingDate,
+            [FIELD_MAP.status]: status,
+            [FIELD_MAP.facility]: facility,
+        }
+
+        record.patchUpdate(newDetails, function (err) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            console.log('Updated', record.get('DIN'));
+        }   );
 
     });
 
