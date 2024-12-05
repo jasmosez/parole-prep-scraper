@@ -1,42 +1,79 @@
 import { spawnSync } from 'child_process';
 
 /**
- * Executes a curl command with the given options and returns the result.
- * If the result is a valid JSON string, it will be parsed and returned as an object.
- * Otherwise, the raw string output will be returned.
- *
- * @param {string[]} options - The options to pass to the curl command.
- * @returns {Promise<Object|string>} - A promise that resolves to the parsed JSON object or the raw string output.
+ * Custom error class representing an empty response from a cURL request.
+ * 
+ * @class CurlEmptyResponseError
+ * @extends {Error}
  */
-const curlRequest = async (options) => {
+export class CurlEmptyResponseError extends Error {
+    static ERROR_NAME = 'CurlEmptyResponseError';
+
+    constructor(message) {
+        super(message);
+        this.name = CurlEmptyResponseError.ERROR_NAME;
+    }
+}
+
+/**
+ * Executes a curl command with the given options and returns the result.
+ *
+ * @param {string[]} options - An array of options to pass to the curl command.
+ * @returns {Object|string} - The parsed JSON object if the output is valid JSON, otherwise the raw output string.
+ */
+const curlRequest = (options) => {
     const child = spawnSync('curl', options, { shell: true });
-    const {error, stdout} = child;
+    const {error, stdout, stderr} = child;
     if(error){
         console.log('exec error: ' + error);
     }
     
     // Convert stdout buffer to string
     const stdoutString = stdout.toString();
+    if (stdoutString === '') {
+        const error = stderr.toString();
+        const start = error.search('curl:')
+        throw new CurlEmptyResponseError(`Empty response from server: ${error.slice(start).trim()}`);
+    }
 
     // Try to parse the string as JSON
     try {
-        const jsonObject = JSON.parse(stdoutString);
-        return jsonObject;
+        return JSON.parse(stdoutString);
     } catch (e) {
         // If parsing fails, return the string
         return stdoutString;
     }
 }  
 
+
 /**
- * Fetches information about an incarcerated person using their DIN (Department Identification Number) from the New York State Department of Corrections and Community Supervision (NYC DOCCS).
+ * Fetches the schema of an Airtable base using the provided base ID and API key.
  *
- * @param {string} din - The Department Identification Number of the incarcerated person.
- * @returns {Promise<void>} A promise that resolves when the data has been fetched and logged.
+ * @param {string} baseId - The ID of the Airtable base.
+ * @param {string} apiKey - The API key for accessing the Airtable API.
+ * @returns {Promise<Object>} The schema of the Airtable base.
+ * @throws Will log an error to the console if the request fails.
+ */
+export const getAirtableBaseSchema = (baseId, apiKey) => {
+    const curlOptions = [`"https://api.airtable.com/v0/meta/bases/${baseId}/tables" \
+        -H "Authorization: Bearer ${apiKey}"`]
+    try {
+        return curlRequest(curlOptions)
+    } catch(err) {
+        console.log(err)
+    }  
+}
+
+
+/**
+ * Looks up information for a given DIN (Department Identification Number) using the NYS DOCCS lookup service.
+ *
+ * @param {string} din - The Department Identification Number to lookup.
+ * @returns {Object} The response from the NYS DOCCS lookup service.
  * @throws Will throw an error if the request fails.
  */
-export const lookupDIN = async (din) => {
-    const curlOptions = [`curl 'https://nysdoccslookup.doccs.ny.gov/IncarceratedPerson/SearchByDin' \
+export const lookupDIN = (din) => {
+    const curlOptions = [`'https://nysdoccslookup.doccs.ny.gov/IncarceratedPerson/SearchByDin' \
         -H 'Accept: */*' \
         -H 'Accept-Language: en-US,en;q=0.9' \
         -H 'Connection: keep-alive' \
@@ -48,8 +85,36 @@ export const lookupDIN = async (din) => {
         --data-raw '"${din}"'`]
 
     try{
-        return await curlRequest(curlOptions)
+        return curlRequest(curlOptions)
     } catch(err){
+        if(err instanceof CurlEmptyResponseError){
+            return {error: err.name, empty: true, userDisplayableMessage: err.message}
+        }
         console.log(err)
     }
 }
+
+/**
+ * Validates a DIN (Department Identification Number).
+ *
+ * A valid DIN is a seven character string that consists of:
+ * - Two digits
+ * - One letter (uppercase or lowercase)
+ * - Four digits
+ *
+ * @param {string} din - The DIN to validate.
+ * @returns {boolean} True if the DIN is valid, false otherwise.
+ */
+export const validateDIN = (din) => {
+    // Check if DIN is a seven character string with 2 numbers, a letter, and a 4 digit number
+    return /^\d{2}[A-Za-z]\d{4}$/.test(din);
+}
+
+export const valuesMatch = (airtable, doccs) => {
+    if (typeof airtable === 'string') {
+        return airtable === doccs;
+    } else if (Array.isArray(airtable)) {
+        airtable.includes(doccs);
+    }
+    return false;
+};
