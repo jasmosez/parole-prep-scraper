@@ -42,8 +42,8 @@ export const DOCCS_TO_AIR = {
     },   
     'releaseDate': {
         id: 'flduQFFHqzBME4Ml1', //Latest Release Date / Type (Released People Only) [DOCCS]
-        test: (air, doccs) => air === doccs,
-        update: (doccs) => doccs
+        test: (air, doccs) => air === doccs || '',
+        update: (doccs) => doccs || ''
     },
     'sentence': {
         id: 'fldAx3FzIpIkZrmLA', // 'Sentence'

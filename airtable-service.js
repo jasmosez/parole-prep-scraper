@@ -45,7 +45,7 @@ export class AirtableService {
 
     async updateRecord(record, changes) {
         // TODO: Implement this
-        console.log('Updating record:', record.id, changes);
+        // console.log('Updating record:', record.id, changes);
         // // Convert changes array to Airtable's expected format
         // const updateFields = changes.reduce((acc, change) => {
         //     acc[change.field] = change.newValue;

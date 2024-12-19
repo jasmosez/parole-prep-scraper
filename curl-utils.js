@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { report } from './report.js';
 
 /**
  * Custom error class representing an empty response from a cURL request.
@@ -127,17 +128,30 @@ export const lookupDIN = async (din) => {
         -H 'Sec-Fetch-Site: same-origin' \
         -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' \
         -H 'content-type: application/json; charset=utf-8' \
-        --data-raw '"${din}"'`]
+        --data-raw '"${din}"'`];
 
+    const startTime = Date.now();
     try {
-        return await withRetry(() => curlRequest(curlOptions))
-    } catch(err) {
-        if(err instanceof CurlEmptyResponseError){
-            return {error: err.name, empty: true, userDisplayableMessage: err.message}
-        }
-        console.log(err)
+        const result = await withRetry(() => curlRequest(curlOptions));
+        report.addNetworkMetric({ 
+            requestTime: Date.now() - startTime,
+            success: true,
+            isEmpty: !result || Object.keys(result).length === 0
+        });
+        return result;
+    } catch (error) {
+        report.addNetworkMetric({ 
+            requestTime: Date.now() - startTime,
+            success: false,
+            errorType: error.name,
+            isEmpty: error instanceof CurlEmptyResponseError
+        });
+        return {
+            error: error.name,
+            userDisplayableMessage: error.message
+        };
     }
-}
+};
 
 /**
  * Validates a DIN (Department Identification Number).

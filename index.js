@@ -11,10 +11,8 @@
 import 'dotenv/config';
 import { lookupDIN, validateDIN, CurlEmptyResponseError, delay } from './curl-utils.js';
 import { DIN, DOCCS_TO_AIR } from './data-mapping.js';
-import { RecordOutcome, createReport } from './report.js';
+import { RecordOutcome, report } from './report.js';
 import { airtable } from './airtable-service.js';
-
-const report = createReport();
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -112,26 +110,25 @@ const processBatch = async (records, startIndex, batchSize, totalRecords) => {
 };
 
 const run = async () => {
-    // Initialize Airtable service
     await airtable.initialize();
     
     try {
         const records = airtable.getAllRecords();
-
-        // Process records in batches
         const BATCH_SIZE = 50;
-        const BATCH_DELAY = 10000; // 10 seconds between batches
+        const BATCH_DELAY = 10000;
 
         for (let i = 0; i < records.length; i += BATCH_SIZE) {
-            console.log(`Processing batch starting at index ${i}`);
+            const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
+            console.log(`Processing batch ${batchIndex} starting at index ${i}`);
             
             const start = new Date();
             await processBatch(records, i, BATCH_SIZE, records.length);
             const end = new Date();
             
-            // Add delay between batches if not the last batch
+            // Add batch timing to report
+            report.addBatchTime(batchIndex, start, end);
+            
             if (i + BATCH_SIZE < records.length) {
-                console.log(`Batch processing time: ${(end - start)/1000}s`);
                 console.log('report', report.getSummary());
                 console.log(`Waiting ${BATCH_DELAY}ms before processing next batch...`);
                 await delay(BATCH_DELAY);
