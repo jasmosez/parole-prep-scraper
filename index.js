@@ -77,34 +77,45 @@ const DOCCS_TO_AIR = {
         },
         requiredFields: ['minSentence', 'maxSentence']
     },
-
-
-    // Fields to Possibly Add
-    // 'age': '', //'Age'
-    // 'county': '', //'County of conviction'
-    // 'race': '', //'Race'
-    // 'paroleHearingType': '', //'Parole Interview Type'
-    // 'paroleEligDate': '', //'Parole Eligibility Date'
-    // 'earliestReleaseDate': '', //'Earliest Release Date'
-
-    // FYI: 'minSentence and MaxSentence are combined to form  a value for 'fldAx3FzIpIkZrmLA' ('Sentence')
-}
-
-// Move the field mapping into an async function
-async function initializeFieldMappings() {
-    const tables = (await getAirtableBaseSchema(AIRTABLE_BASE_ID, AIRTABLE_API_KEY)).tables;
-    const table = tables.find(table => table.id === AIRTABLE_TABLE_ID);
-    return table.fields
-    // Object.keys(DOCCS_TO_AIR).reduce((acc, doccsFieldId) => {
-    //     const airtableFieldId = DOCCS_TO_AIR[doccsFieldId].id;
-    //     const field = table.fields.find(field => field.id === airtableFieldId);
-    //     acc[airtableFieldId] = field.name;
-    //     return acc;
-    // }, {});
+    'county': {
+        id: 'fldOc0FgeFDZhxj8n', //'County'
+        test: (air, doccs) => air === toTitleCase(doccs),
+        update: (doccs) => toTitleCase(doccs)
+    },
+    // 'race': {
+    //     id: '', //'Race'
+    //     test: (air, doccs) => air === doccs,
+    //     update: (doccs) => doccs
+    // },
+    'paroleHearingType': {
+        id: 'fld1W4lMm0iLcV9ui', //'Parole Interview Type'
+        test: (air, doccs) => air === doccs,
+        update: (doccs) => doccs
+    },
+    // 'paroleEligDate': {
+    //     id: '', //'Parole Eligibility Date'
+    //     test: (air, doccs) => air === doccs,
+    //     update: (doccs) => doccs
+    // },
+    'earliestReleaseDate': {
+        id: 'fldzGsyKz7ZNV9S7A', //'Earliest Release Date'
+        test: (air, doccs) => air === doccs,
+        update: (doccs) => doccs
+    },
+    'dateOfBirth': {
+        id: 'fldmVco0UMW7hxj4I', //'Date of Birth'
+        test: (air, doccs) => air === new Date(doccs).toISOString().split('T')[0],
+        update: (doccs) => new Date(doccs).toISOString().split('T')[0]
+    },
 }
 
 // Initialize as empty object first
 let airtableFields = {};
+async function initializeFieldMappings() {
+    const tables = (await getAirtableBaseSchema(AIRTABLE_BASE_ID, AIRTABLE_API_KEY)).tables;
+    const table = tables.find(table => table.id === AIRTABLE_TABLE_ID);
+    return table.fields
+}
 
 // Define outcome types as an enum-like object for better type safety
 const RecordOutcome = {
@@ -292,7 +303,7 @@ const run = async () => {
 
         // Process records in batches
         const BATCH_SIZE = 50;
-        const BATCH_DELAY = 5000; // 5 seconds between batches
+        const BATCH_DELAY = 10000; // 10 seconds between batches
 
         for (let i = 0; i < records.length; i += BATCH_SIZE) {
             console.log(`Processing batch starting at index ${i}`);
