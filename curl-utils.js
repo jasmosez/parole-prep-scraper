@@ -16,6 +16,50 @@ export class CurlEmptyResponseError extends Error {
 }
 
 /**
+ * Delays execution for specified milliseconds
+ * @param {number} ms - milliseconds to wait
+ * @returns {Promise} resolves after delay
+ */
+export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Executes a function with retry logic and exponential backoff
+ * @param {Function} fn - function to execute
+ * @param {Object} options - retry options
+ * @returns {Promise} resolves with function result
+ */
+const withRetry = async (fn, options = {}) => {
+    const {
+        maxAttempts = 5,
+        initialDelay = 5000,
+        maxDelay = 60000,
+        backoffFactor = 2
+    } = options;
+
+    let attempt = 1;
+    let currentDelay = initialDelay;
+
+    while (attempt <= maxAttempts) {
+        try {
+            const result = await fn();
+            return result;
+        } catch (error) {
+            if (error instanceof CurlEmptyResponseError) {
+                if (attempt === maxAttempts) throw error;
+                
+                console.log(`Attempt ${attempt} failed, retrying after ${currentDelay}ms...`);
+                await delay(currentDelay);
+                
+                currentDelay = Math.min(currentDelay * backoffFactor, maxDelay);
+                attempt++;
+            } else {
+                throw error;
+            }
+        }
+    }
+};
+
+/**
  * Executes a curl command with the given options and returns the result.
  *
  * @param {string[]} options - An array of options to pass to the curl command.
@@ -54,11 +98,12 @@ const curlRequest = (options) => {
  * @returns {Promise<Object>} The schema of the Airtable base.
  * @throws Will log an error to the console if the request fails.
  */
-export const getAirtableBaseSchema = (baseId, apiKey) => {
+export const getAirtableBaseSchema = async (baseId, apiKey) => {
     const curlOptions = [`"https://api.airtable.com/v0/meta/bases/${baseId}/tables" \
         -H "Authorization: Bearer ${apiKey}"`]
     try {
-        return curlRequest(curlOptions)
+        const schema = await withRetry(() => curlRequest(curlOptions))
+        return schema;
     } catch(err) {
         console.log(err)
     }  
@@ -72,7 +117,7 @@ export const getAirtableBaseSchema = (baseId, apiKey) => {
  * @returns {Object} The response from the NYS DOCCS lookup service.
  * @throws Will throw an error if the request fails.
  */
-export const lookupDIN = (din) => {
+export const lookupDIN = async (din) => {
     const curlOptions = [`'https://nysdoccslookup.doccs.ny.gov/IncarceratedPerson/SearchByDin' \
         -H 'Accept: */*' \
         -H 'Accept-Language: en-US,en;q=0.9' \
@@ -84,9 +129,9 @@ export const lookupDIN = (din) => {
         -H 'content-type: application/json; charset=utf-8' \
         --data-raw '"${din}"'`]
 
-    try{
-        return curlRequest(curlOptions)
-    } catch(err){
+    try {
+        return await withRetry(() => curlRequest(curlOptions))
+    } catch(err) {
         if(err instanceof CurlEmptyResponseError){
             return {error: err.name, empty: true, userDisplayableMessage: err.message}
         }
@@ -109,12 +154,3 @@ export const validateDIN = (din) => {
     // Check if DIN is a seven character string with 2 numbers, a letter, and a 4 digit number
     return /^\d{2}[A-Za-z]\d{4}$/.test(din);
 }
-
-export const valuesMatch = (airtable, doccs) => {
-    if (typeof airtable === 'string') {
-        return airtable === doccs;
-    } else if (Array.isArray(airtable)) {
-        airtable.includes(doccs);
-    }
-    return false;
-};
