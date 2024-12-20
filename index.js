@@ -16,107 +16,144 @@ import { airtable } from './airtable-service.js';
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
-    
-    await Promise.all(batch.map(async (record, index) => {
-        const countString = `[${startIndex + index + 1}/${totalRecords}]`;
-        const din = record.get(DIN).trim();
-        console.log(`${countString} Processing DIN`, din);
+    await Promise.all(batch.map((record, index) => 
+        processRecord(record, startIndex + index, totalRecords)
+    ));
+};
 
-        if (!validateDIN(din)) {
-            return report.addRecord({ 
-                recordId: record.id, 
-                din, 
-                outcome: RecordOutcome.INVALID_DIN 
-            });
-        }
-        
-        // Get DOCCS Data
+const processRecord = async (record, currentIndex, totalRecords) => {
+    const countString = `[${currentIndex + 1}/${totalRecords}]`;
+    const din = record.get(DIN)?.trim();
+    console.log(`${countString} Processing DIN`, din);
+
+    // Validation step
+    if (!validateDIN(din)) {
+        return report.addRecord({
+            recordId: record.id,
+            din,
+            outcome: RecordOutcome.INVALID_DIN,
+            message: 'Invalid DIN format'
+        });
+    }
+
+    // Data fetching step
+    const data = await fetchAndValidateData(din, record.id);
+    if (data.error) {
+        return; // fetchAndValidateData handles error reporting
+    }
+
+    // Process changes
+    const changes = await processChanges(record, data, din);
+    if (changes.error) {
+        return; // processChanges handles error reporting
+    }
+};
+
+const fetchAndValidateData = async (din, recordId) => {
+    try {
         const data = await lookupDIN(din);
-        console.log(`${countString} Data length:`, Object.keys(data).length);
         
         if (data.error) {
             const outcome = data.error === CurlEmptyResponseError.ERROR_NAME 
                 ? RecordOutcome.EMPTY_RESPONSE 
                 : RecordOutcome.ERROR_RESPONSE;
-            return report.addRecord({ 
-                recordId: record.id, 
+            report.addRecord({ 
+                recordId, 
                 din, 
                 outcome,
                 message: data.userDisplayableMessage 
             });
+            return { error: true };
         }
+        return data;
+    } catch (error) {
+        report.addRecord({
+            recordId,
+            din,
+            outcome: RecordOutcome.PROCESSING_ERROR,
+            message: `Error fetching data: ${error.message}`
+        });
+        return { error: true };
+    }
+};
 
-        // When processing changes
-        try {
-            const changes = [];
-            for (const [doccsKey, fieldMapping] of Object.entries(DOCCS_TO_AIR)) {
-                // Get the airtable value
-                const fieldName = airtable.getFieldName(fieldMapping.id);
-                if (!fieldName) continue;
-                
-                const airtableValue = record.get(fieldName);
-                
-                // Get the DOCCS value
-                let doccsValue;
-                if (fieldMapping.requiredFields) {
-                    // Handle special case where multiple DOCCS fields are needed
-                    doccsValue = {};
-                    for (const field of fieldMapping.requiredFields) {
-                        doccsValue[field] = data[field];
-                    }
-                } else {
-                    // Handle normal case (single field)
-                    doccsValue = data[doccsKey];
-                }
-                
-                // Compare the values
-                const valuesMatch = fieldMapping.test(airtableValue, doccsValue);
-                if (!valuesMatch) {
-                    const newValue = fieldMapping.update(doccsValue);
-                    changes.push({
-                        field: fieldName,
-                        oldValue: airtableValue,
-                        newValue
-                    });
-                }
-            }
+const processChanges = async (record, data, din) => {
+    try {
+        const changes = calculateChanges(record, data);
+        await updateRecordIfNeeded(record, changes, din);
+        return { error: false };
+    } catch (error) {
+        report.addRecord({
+            recordId: record.id,
+            din,
+            outcome: RecordOutcome.PROCESSING_ERROR,
+            message: `Error processing changes: ${error.message}`
+        });
+        console.error(`Error processing changes for DIN ${din}:`, error);
+        return { error: true };
+    }
+};
 
-            try {
-                if (changes.length > 0) {
-                    await airtable.updateRecord(record, changes);
-                    report.addRecord({
-                        recordId: record.id,
-                        din,
-                        outcome: RecordOutcome.CHANGED,
-                        changes
-                    });
-                } else {
-                    report.addRecord({
-                        recordId: record.id,
-                        din,
-                        outcome: RecordOutcome.NO_CHANGE,
-                        changes
-                    });
-                }
-            } catch (error) {
-                report.addRecord({
-                    recordId: record.id,
-                    din,
-                    outcome: RecordOutcome.UPDATE_FAILED,
-                    message: error.message,
-                    changes
-                });
-            }
-        } catch (error) {
+const calculateChanges = (record, data) => {
+    const changes = [];
+    for (const [doccsKey, fieldMapping] of Object.entries(DOCCS_TO_AIR)) {
+        const fieldName = airtable.getFieldName(fieldMapping.id);
+        //TODO: raise error if fieldName is not found
+        if (!fieldName) continue;
+        
+        const airtableValue = record.get(fieldName);
+        const doccsValue = getDoccsValue(data, doccsKey, fieldMapping);
+        
+        if (!fieldMapping.test(airtableValue, doccsValue)) {
+            changes.push({
+                field: fieldName,
+                oldValue: airtableValue,
+                newValue: fieldMapping.update(doccsValue)
+            });
+        }
+    }
+    return changes;
+};
+
+// Handles single field and multiple field mappings
+const getDoccsValue = (data, doccsKey, fieldMapping) => {
+    if (fieldMapping.requiredFields) {
+        const doccsValue = {};
+        for (const field of fieldMapping.requiredFields) {
+            doccsValue[field] = data[field];
+        }
+        return doccsValue;
+    }
+    return data[doccsKey];
+};
+
+const updateRecordIfNeeded = async (record, changes, din) => {
+    try {
+        if (changes.length > 0) {
+            await airtable.updateRecord(record, changes);
             report.addRecord({
                 recordId: record.id,
                 din,
-                outcome: RecordOutcome.PROCESSING_ERROR,
-                message: `Error processing changes: ${error.message}`
+                outcome: RecordOutcome.CHANGED,
+                changes
             });
-            console.error(`Error processing changes for DIN ${din}:`, error);
+        } else {
+            report.addRecord({
+                recordId: record.id,
+                din,
+                outcome: RecordOutcome.NO_CHANGE,
+                changes
+            });
         }
-    }));
+    } catch (error) {
+        report.addRecord({
+            recordId: record.id,
+            din,
+            outcome: RecordOutcome.UPDATE_FAILED,
+            message: error.message,
+            changes
+        });
+    }
 };
 
 const run = async () => {
