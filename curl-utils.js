@@ -1,5 +1,6 @@
 import { spawnSync } from 'child_process';
 import { report } from './report.js';
+import { logger } from './logger.js';
 
 /**
  * Custom error class representing an empty response from a cURL request.
@@ -68,7 +69,10 @@ const withRetry = async (fn, options = {}) => {
 
                 if (attempt === maxAttempts) throw error;
                 
-                console.log(`Attempt ${attempt} failed, retrying after ${currentDelay}ms...`);
+                logger.warn(`Request attempt failed, retrying`, { 
+                    attempt, 
+                    nextDelay: currentDelay 
+                });
                 await delay(currentDelay);
                 
                 currentDelay = Math.min(currentDelay * backoffFactor, maxDelay);
@@ -126,7 +130,8 @@ export const getAirtableBaseSchema = async (baseId, apiKey) => {
         const schema = await withRetry(() => curlRequest(curlOptions))
         return schema;
     } catch(err) {
-        console.log(err)
+        logger.error('Failed to fetch Airtable schema:', err);
+        process.exit(1);
     }  
 }
 

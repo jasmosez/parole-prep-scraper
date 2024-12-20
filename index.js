@@ -13,6 +13,7 @@ import { lookupDIN, validateDIN, CurlEmptyResponseError, delay } from './curl-ut
 import { DIN, DOCCS_TO_AIR } from './data-mapping.js';
 import { RecordOutcome, report } from './report.js';
 import { airtable } from './airtable-service.js';
+import { logger } from './logger.js';
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -22,9 +23,8 @@ const processBatch = async (records, startIndex, batchSize, totalRecords) => {
 };
 
 const processRecord = async (record, currentIndex, totalRecords) => {
-    const countString = `[${currentIndex + 1}/${totalRecords}]`;
     const din = record.get(DIN)?.trim();
-    console.log(`${countString} Processing DIN`, din);
+    logger.logProgress(currentIndex + 1, totalRecords, din);
 
     // Validation step
     if (!validateDIN(din)) {
@@ -137,6 +137,7 @@ const updateRecordIfNeeded = async (record, changes, din) => {
                 outcome: RecordOutcome.CHANGED,
                 changes
             });
+            logger.debug('Record updated', { din });
         } else {
             report.addRecord({
                 recordId: record.id,
@@ -144,6 +145,7 @@ const updateRecordIfNeeded = async (record, changes, din) => {
                 outcome: RecordOutcome.NO_CHANGE,
                 changes
             });
+            logger.debug('No changes needed', { din });
         }
     } catch (error) {
         report.addRecord({
@@ -153,6 +155,7 @@ const updateRecordIfNeeded = async (record, changes, din) => {
             message: error.message,
             changes
         });
+        logger.error('Failed to update record', error, { din });
     }
 };
 
@@ -166,7 +169,7 @@ const run = async () => {
 
         for (let i = 0; i < records.length; i += BATCH_SIZE) {
             const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
-            console.log(`Processing batch ${batchIndex} starting at index ${i}`);
+            logger.logBatch(batchIndex, i, BATCH_SIZE);
             
             const start = new Date();
             await processBatch(records, i, BATCH_SIZE, records.length);
@@ -176,15 +179,15 @@ const run = async () => {
             report.addBatchTime(batchIndex, start, end);
             
             if (i + BATCH_SIZE < records.length) {
-                console.dir(report.getSummary(), { depth: null, colors: true });
-                console.log(`Waiting ${BATCH_DELAY}ms before processing next batch...`);
+                logger.logReport(report);
+                logger.info(`Waiting before next batch`, { delay: BATCH_DELAY });
                 await delay(BATCH_DELAY);
             }
         }
 
-        console.log('Processing complete. Final report:', report);
+        logger.logReport(report, true);
     } catch (err) {
-        console.error('Error processing records:', err);
+        logger.error('Error processing records:', err);
     }
 };
 
@@ -193,7 +196,7 @@ const run = async () => {
     try {
         await run();
     } catch (err) {
-        console.error('Script failed:', err);
+        logger.error('Script failed:', err);
     }
 })();  
 

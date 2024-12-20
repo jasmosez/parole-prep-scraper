@@ -1,5 +1,6 @@
 import Airtable from 'airtable';
 import { getAirtableBaseSchema } from './curl-utils.js';
+import { logger } from './logger.js';
 
 export class AirtableService {
     constructor() {
@@ -33,7 +34,7 @@ export class AirtableService {
     getFieldName(fieldId) {
         const field = this.fields.find(field => field.id === fieldId);
         if (!field) {
-            console.error(`Field mapping not found for ${fieldId}`);
+            logger.warn(`Field mapping not found`, { fieldId });
             return null;
         }
         return field.name;

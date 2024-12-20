@@ -1,3 +1,5 @@
+import { logger } from './logger.js';
+
 // Define outcome types as an enum-like object for better type safety
 export const RecordOutcome = {
     INVALID_DIN: 'INVALID_DIN',
@@ -66,8 +68,6 @@ class Report {
                 this.summary.byFieldChange[field]++;
             });
         }
-
-        console.log(`Added to report: ${outcome} ${recordId} ${din} ${message}`);
     }
 
     getRecordsByOutcome(outcome) {
@@ -105,9 +105,6 @@ class Report {
             endTime: endTime.toISOString(),
             processingSeconds
         });
-
-        console.log(`Batch ${batchIndex} processing time: ${processingSeconds.toFixed(2)}s`);
-        console.log(`Average processing time: ${this.summary.processingTime.averageSeconds.toFixed(2)}s`);
     }
 
     addNetworkMetric({ 
