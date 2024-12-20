@@ -39,13 +39,33 @@ const withRetry = async (fn, options = {}) => {
 
     let attempt = 1;
     let currentDelay = initialDelay;
+    let totalStartTime = Date.now();
 
     while (attempt <= maxAttempts) {
+        const attemptStartTime = Date.now();
         try {
             const result = await fn();
+            // Track successful attempt after retries
+            if (attempt > 1) {
+                report.addNetworkMetric({
+                    requestTime: Date.now() - totalStartTime,
+                    success: true,
+                    retryCount: attempt - 1
+                });
+            }
             return result;
         } catch (error) {
             if (error instanceof CurlEmptyResponseError) {
+                // Track each failed attempt
+                report.addNetworkMetric({
+                    requestTime: Date.now() - attemptStartTime,
+                    success: false,
+                    errorType: error.name,
+                    isEmpty: true,
+                    retryAttempt: attempt,
+                    backoffDelay: currentDelay
+                });
+
                 if (attempt === maxAttempts) throw error;
                 
                 console.log(`Attempt ${attempt} failed, retrying after ${currentDelay}ms...`);

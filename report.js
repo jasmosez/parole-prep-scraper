@@ -3,6 +3,7 @@ export const RecordOutcome = {
     INVALID_DIN: 'INVALID_DIN',
     ERROR_RESPONSE: 'ERROR_RESPONSE',
     EMPTY_RESPONSE: 'EMPTY_RESPONSE',
+    PROCESSING_ERROR: 'PROCESSING_ERROR',
     NO_CHANGE: 'NO_CHANGE',
     CHANGED: 'CHANGED',
     UPDATE_FAILED: 'UPDATE_FAILED'
@@ -80,7 +81,14 @@ class Report {
     }
 
     getSummary() {
-        return this.summary;
+        const { networkMetrics, processingTime, ...rest } = this.summary;
+        const { byBatch, ...otherProcessingTime } = processingTime;
+        const { requestTimes, ...otherNetworkMetrics } = networkMetrics;
+        return {
+            ...rest,
+            processingTime: otherProcessingTime,
+            networkMetrics: otherNetworkMetrics,
+        };
     }
 
     addBatchTime(batchIndex, startTime, endTime) {
@@ -106,23 +114,33 @@ class Report {
         requestTime, 
         success = true, 
         errorType = null, 
-        isEmpty = false 
+        isEmpty = false,
+        retryAttempt = 0,
+        retryCount = 0,
+        backoffDelay = 0
     }) {
         const metrics = this.summary.networkMetrics;
         
-        // Track request counts and times
         metrics.totalRequests++;
         metrics.totalRequestTime += requestTime;
         metrics.averageRequestTime = metrics.totalRequestTime / metrics.totalRequests;
+        
+        // Track retries
+        if (retryAttempt > 0) {
+            metrics.retryAttempts = (metrics.retryAttempts || 0) + 1;
+            metrics.totalBackoffTime = (metrics.totalBackoffTime || 0) + backoffDelay;
+        }
+        
         metrics.requestTimes.push({
             timestamp: new Date().toISOString(),
             duration: requestTime,
             success,
             errorType,
-            isEmpty
+            isEmpty,
+            retryAttempt,
+            backoffDelay
         });
 
-        // Track failures and types
         if (!success) {
             metrics.failedRequests++;
             metrics.consecutiveFailures.current++;
@@ -134,21 +152,15 @@ class Report {
                 metrics.errorsByType[errorType] = (metrics.errorsByType[errorType] || 0) + 1;
             }
         } else {
+            if (retryCount > 0) {
+                metrics.successfulRetries = (metrics.successfulRetries || 0) + 1;
+            }
             metrics.consecutiveFailures.current = 0;
         }
 
-        // Track empty responses
         if (isEmpty) {
             metrics.emptyResponses++;
         }
-
-        // Log significant events
-        // if (!success) {
-        //     console.log(`Network event: ${errorType} - Request time: ${requestTime}ms${isEmpty ? ' (Empty response)' : ''}`);
-        //     if (metrics.consecutiveFailures.current > 2) {
-        //         console.log(`Warning: ${metrics.consecutiveFailures.current} consecutive failures`);
-        //     }
-        // }
     }
 
     getNetworkAnalysis() {
