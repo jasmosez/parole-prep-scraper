@@ -96,17 +96,15 @@ const processChanges = async (record, data, din) => {
 
 const calculateChanges = (record, data) => {
     const changes = [];
-    for (const [doccsKey, fieldMapping] of Object.entries(DOCCS_TO_AIR)) {
-        const fieldName = airtable.getFieldName(fieldMapping.id);
-        //TODO: raise error if fieldName is not found
-        if (!fieldName) continue;
-        
-        const airtableValue = record.get(fieldName);
+    const validatedMappings = airtable.getAllValidatedMappings();
+    
+    for (const [doccsKey, fieldMapping] of Object.entries(validatedMappings)) {
+        const airtableValue = record.get(fieldMapping.fieldName);
         const doccsValue = getDoccsValue(data, doccsKey, fieldMapping);
         
         if (!fieldMapping.test(airtableValue, doccsValue)) {
             changes.push({
-                field: fieldName,
+                field: fieldMapping.fieldName,
                 oldValue: airtableValue,
                 newValue: fieldMapping.update(doccsValue)
             });
@@ -175,7 +173,6 @@ const run = async () => {
             await processBatch(records, i, BATCH_SIZE, records.length);
             const end = new Date();
             
-            // Add batch timing to report
             report.addBatchTime(batchIndex, start, end);
             
             if (i + BATCH_SIZE < records.length) {
@@ -187,7 +184,7 @@ const run = async () => {
 
         logger.logReport(report, true);
     } catch (err) {
-        logger.error('Error processing records:', err);
+        logger.error('Script failed:', err);
     }
 };
 
