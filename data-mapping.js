@@ -25,28 +25,51 @@ export const convertToDecimalYears = (sentence) => {
     return Number(years.toFixed(2));
 };
 
+const getISOfromDOCCSDateString = (doccs) => {
+    // Handle empty/invalid values
+    if (!doccs) return '';
+    
+    // Parse date string using regex to handle both formats
+    const dateMatch = doccs.match(/^(\d{2})[/-](?:(\d{2})[/-])?(\d{4})$/);
+    if (!dateMatch) return '';
+    
+    const [, month, day, year] = dateMatch;
+    // If no day provided (MM/YYYY format), use first of month
+    const dayValue = day || '01';
+    
+    // Validate month/day/year
+    const date = new Date(`${year}-${month}-${dayValue}`);
+    if (isNaN(date.getTime())) return '';
+    
+    // Return in ISO format YYYY-MM-DD
+    return date.toISOString().split('T')[0];
+}
+
 // Map DOCCS data to Airtable fields
 export const DIN = 'DIN';
 
 export const DOCCS_TO_AIR = {
     'facility': {
         id: 'fldBgfrJtoRM2NY9s', //'Housing / Releasing Facility'
+        type: 'multipleSelects',
         test: (air, doccs) => air?.includes(toTitleCase(doccs)),
         update: (doccs) => [toTitleCase(doccs)]
-
     },
     'paroleHearingDate': {
         id: 'fldptoJdU40n5dlO7', //Next Interview Date [DOCCS]
-        test: (air, doccs) => air === new Date(doccs.slice(0,3) + '01/' + doccs.slice(3)).toISOString().split('T')[0],
-        update: (doccs) => new Date(doccs.slice(0,3) + '01/' + doccs.slice(3)).toISOString().split('T')[0]
+        type: 'date',
+        test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
+        update: (doccs) => getISOfromDOCCSDateString(doccs)
     },   
     'releaseDate': {
         id: 'flduQFFHqzBME4Ml1', //Latest Release Date / Type (Released People Only) [DOCCS]
-        test: (air, doccs) => air === doccs || '',
-        update: (doccs) => doccs || ''
+        type: 'date',
+        test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
+        update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
     'sentence': {
         id: 'fldAx3FzIpIkZrmLA', // 'Sentence'
+        type: 'text',
         test: (air, doccs) => {
             const { minSentence, maxSentence } = doccs;
             const minValue = convertToDecimalYears(minSentence);
@@ -64,6 +87,7 @@ export const DOCCS_TO_AIR = {
     },
     'county': {
         id: 'fldOc0FgeFDZhxj8n', //'County'
+        type: 'text',
         test: (air, doccs) => air === toTitleCase(doccs),
         update: (doccs) => toTitleCase(doccs)
     },
@@ -74,6 +98,7 @@ export const DOCCS_TO_AIR = {
     // },
     'paroleHearingType': {
         id: 'fld1W4lMm0iLcV9ui', //'Parole Interview Type'
+        type: 'text',
         test: (air, doccs) => air === doccs,
         update: (doccs) => doccs
     },
@@ -84,12 +109,14 @@ export const DOCCS_TO_AIR = {
     // },
     'earliestReleaseDate': {
         id: 'fldzGsyKz7ZNV9S7A', //'Earliest Release Date'
-        test: (air, doccs) => air === doccs,
-        update: (doccs) => doccs
+        type: 'date',
+        test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
+        update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
     'dateOfBirth': {
         id: 'fldmVco0UMW7hxj4I', //'Date of Birth'
-        test: (air, doccs) => air === new Date(doccs).toISOString().split('T')[0],
-        update: (doccs) => new Date(doccs).toISOString().split('T')[0]
+        type: 'date',
+        test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
+        update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
 }

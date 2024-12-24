@@ -1,19 +1,11 @@
-/**
- * SCRIPT OVERVIEW
- * 
- * Read from AirTable
- * Get lookup data from NYC DOCCS by DIN number
- * Compare the two data sets
- * Write to AirTable
- * Output a report of the changes
- */
-
 import 'dotenv/config';
-import { lookupDIN, validateDIN, CurlEmptyResponseError, delay } from './curl-utils.js';
-import { DIN, DOCCS_TO_AIR } from './data-mapping.js';
+import { lookupDIN, validateDIN, delay } from './curl-utils.js';
+import { DIN } from './data-mapping.js';
 import { RecordOutcome, report } from './report.js';
 import { airtable } from './airtable-service.js';
 import { logger } from './logger.js';
+import { CurlEmptyResponseError } from './errors.js';
+import { config } from './config.js';
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -79,7 +71,7 @@ const fetchAndValidateData = async (din, recordId) => {
 
 const processChanges = async (record, data, din) => {
     try {
-        const changes = calculateChanges(record, data);
+        const changes = calculateChanges(record, data, din);
         await updateRecordIfNeeded(record, changes, din);
         return { error: false };
     } catch (error) {
@@ -94,20 +86,49 @@ const processChanges = async (record, data, din) => {
     }
 };
 
-const calculateChanges = (record, data) => {
+const calculateChanges = (record, data, din) => {
     const changes = [];
     const validatedMappings = airtable.getAllValidatedMappings();
     
     for (const [doccsKey, fieldMapping] of Object.entries(validatedMappings)) {
-        const airtableValue = record.get(fieldMapping.fieldName);
-        const doccsValue = getDoccsValue(data, doccsKey, fieldMapping);
-        
-        if (!fieldMapping.test(airtableValue, doccsValue)) {
-            changes.push({
-                field: fieldMapping.fieldName,
-                oldValue: airtableValue,
-                newValue: fieldMapping.update(doccsValue)
+        try {
+            const airtableValue = record.get(fieldMapping.fieldName);
+            const doccsValue = getDoccsValue(data, doccsKey, fieldMapping);
+            
+            // Check if updating a value with an empty string
+            if (!doccsValue || doccsValue === '') {
+                // TODO: not sure we need this even as a debug message
+                // const message = `DOCCS field value missing. No update: ${fieldMapping.fieldName}`;
+                // logger.debug(message);
+                continue;
+            }
+
+            if (!fieldMapping.test(airtableValue, doccsValue)) {
+                const newValue = fieldMapping.update(doccsValue);
+                // Validate the new value matches expected type
+                airtable.validateFieldType(fieldMapping.fieldName, newValue);
+                
+                changes.push({
+                    field: fieldMapping.fieldName,
+                    oldValue: airtableValue,
+                    newValue
+                });
+            }
+        } catch (error) {
+            logger.error('Error processing field', error, { 
+                doccsKey, 
+                din,
+                recordId: record.id,
+                field: fieldMapping.fieldName  // Add field name for better context
             });
+            // Add specific field error to changes array instead of throwing
+            // TODO: pretty sure we don't want this as it throws off our byFieldChange numbers
+            // changes.push({
+            //     field: fieldMapping.fieldName,
+            //     error: error.message
+            // });
+            // Continue processing other fields instead of throwing
+            continue;
         }
     }
     return changes;
@@ -162,8 +183,8 @@ const run = async () => {
     
     try {
         const records = airtable.getAllRecords().sort(() => Math.random() - 0.5);
-        const BATCH_SIZE = 50;
-        const BATCH_DELAY = 10000;
+        const BATCH_SIZE = config.airtable.batchSize;
+        const BATCH_DELAY = config.airtable.batchDelay;
 
         for (let i = 0; i < records.length; i += BATCH_SIZE) {
             const batchIndex = Math.floor(i / BATCH_SIZE) + 1;

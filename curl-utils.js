@@ -1,21 +1,7 @@
 import { spawnSync } from 'child_process';
 import { report } from './report.js';
 import { logger } from './logger.js';
-
-/**
- * Custom error class representing an empty response from a cURL request.
- * 
- * @class CurlEmptyResponseError
- * @extends {Error}
- */
-export class CurlEmptyResponseError extends Error {
-    static ERROR_NAME = 'CurlEmptyResponseError';
-
-    constructor(message) {
-        super(message);
-        this.name = CurlEmptyResponseError.ERROR_NAME;
-    }
-}
+import { CurlEmptyResponseError, CurlTimeoutError, CurlNetworkError } from './errors.js';
 
 /**
  * Delays execution for specified milliseconds
@@ -91,29 +77,36 @@ const withRetry = async (fn, options = {}) => {
  * @returns {Object|string} - The parsed JSON object if the output is valid JSON, otherwise the raw output string.
  */
 const curlRequest = (options) => {
-    const child = spawnSync('curl', options, { shell: true });
+    const timeoutOptions = [
+        '--connect-timeout', '10',
+        '--max-time', '30'
+    ];
+
+    const child = spawnSync('curl', [...timeoutOptions, ...options], { shell: true });
     const {error, stdout, stderr} = child;
-    if(error){
-        console.log('exec error: ' + error);
+    
+    if (error) {
+        logger.error('Curl execution error', error);
+        if (error.code === 'ETIMEDOUT') {
+            throw new CurlTimeoutError('Request timed out');
+        }
+        throw new CurlNetworkError(error.message, error.code);
     }
     
-    // Convert stdout buffer to string
     const stdoutString = stdout.toString();
+    
     if (stdoutString === '') {
         const error = stderr.toString();
         const start = error.search('curl:')
         throw new CurlEmptyResponseError(`Empty response from server: ${error.slice(start).trim()}`);
     }
 
-    // Try to parse the string as JSON
     try {
         return JSON.parse(stdoutString);
     } catch (e) {
-        // If parsing fails, return the string
         return stdoutString;
     }
-}  
-
+};
 
 /**
  * Fetches the schema of an Airtable base using the provided base ID and API key.
@@ -134,7 +127,6 @@ export const getAirtableBaseSchema = async (baseId, apiKey) => {
         process.exit(1);
     }  
 }
-
 
 /**
  * Looks up information for a given DIN (Department Identification Number) using the NYS DOCCS lookup service.

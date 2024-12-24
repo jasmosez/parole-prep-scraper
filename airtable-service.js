@@ -2,6 +2,8 @@ import Airtable from 'airtable';
 import { getAirtableBaseSchema } from './curl-utils.js';
 import { logger } from './logger.js';
 import { DOCCS_TO_AIR } from './data-mapping.js';
+import { AirtableError, DataTypeError, FieldMappingError } from './errors.js';
+import { config } from './config.js';
 
 export class AirtableService {
     constructor() {
@@ -15,10 +17,10 @@ export class AirtableService {
 
     async initialize() {
         this.config = {
-            apiKey: process.env.AIRTABLE_API_KEY,
-            baseId: process.env.AIRTABLE_BASE_ID,
-            tableId: process.env.AIRTABLE_TABLE_ID,
-            view: process.env.AIRTABLE_VIEW
+            apiKey: config.airtable.apiKey,
+            baseId: config.airtable.baseId,
+            tableId: config.airtable.tableId,
+            view: config.airtable.view
         };
 
         if (!this.config.apiKey || !this.config.baseId || !this.config.tableId || !this.config.view) {
@@ -46,7 +48,7 @@ export class AirtableService {
                     fieldId: fieldMapping.id, 
                     doccsKey 
                 });
-                throw new Error(`Field mapping not found for ID: ${fieldMapping.id}`);
+                throw new AirtableError(`Field mapping not found for ID: ${fieldMapping.id}`);
             }
             validatedMappings[doccsKey] = {
                 ...fieldMapping,
@@ -63,7 +65,7 @@ export class AirtableService {
 
     getAllValidatedMappings() {
         if (!this.validatedMappings) {
-            throw new Error('Airtable service not initialized');
+            throw new AirtableError('Airtable service not initialized');
         }
         return this.validatedMappings;
     }
@@ -73,7 +75,7 @@ export class AirtableService {
         const table = airtableSchema.tables?.find(table => table.id === this.config.tableId);
         
         if (!table) {
-            throw new Error(`Table with ID ${this.config.tableId} not found in schema`);
+            throw new AirtableError(`Table with ID ${this.config.tableId} not found in schema`);
         }
         
         this.fields = table.fields || [];
@@ -92,17 +94,85 @@ export class AirtableService {
         return this.records;
     }
 
+    validateFieldType(fieldName, value) {
+        const field = this.fields.find(f => f.name === fieldName);
+        if (!field) {
+            throw new FieldMappingError(`Field not found: ${fieldName}`);
+        }
+
+        try {
+            switch(field.type) {
+                case 'multipleSelects':
+                    if (!Array.isArray(value)) {
+                        throw new DataTypeError('Expected array for multipleSelects', { 
+                            field: fieldName, 
+                            value, 
+                            expectedType: 'array' 
+                        });
+                    }
+                    break;
+                case 'number':
+                    if (typeof value !== 'number') {
+                        throw new DataTypeError('Expected number', { 
+                            field: fieldName, 
+                            value, 
+                            expectedType: 'number' 
+                        });
+                    }
+                    break;
+                case 'date':
+                    if (value !== '' && !(value instanceof Date) && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                        throw new DataTypeError('Expected date string (YYYY-MM-DD) or empty string', { 
+                            field: fieldName, 
+                            value, 
+                            expectedType: 'date' 
+                        });
+                    }
+                    break;
+                case 'checkbox':
+                    if (typeof value !== 'boolean') {
+                        throw new DataTypeError('Expected boolean', { 
+                            field: fieldName, 
+                            value, 
+                            expectedType: 'boolean' 
+                        });
+                    }
+                    break;
+                // Add other types as needed
+            }
+            return true;
+        } catch (error) {
+            logger.error('Field validation failed', error, { fieldName, value });
+            throw error;
+        }
+    }
+
     async updateRecord(record, changes) {
         // TODO: Implement this
-        // console.log('Updating record:', record.id, changes);
-        // // Convert changes array to Airtable's expected format
         // const updateFields = changes.reduce((acc, change) => {
+        //     if (change.error) {
+        //         return acc;
+        //     }
         //     acc[change.field] = change.newValue;
         //     return acc;
         // }, {});
-    
-        // // Attempt to update the record
-        // return await record.updateFields(updateFields);
+
+        // try {
+        //     await record.updateFields(updateFields);
+        //     logger.debug('Record updated', { 
+        //         recordId: record.id, 
+        //         fields: Object.keys(updateFields) 
+        //     });
+        // } catch (error) {
+        //     logger.error('Failed to update record', error, {
+        //         recordId: record.id,
+        //         fields: Object.keys(updateFields)
+        //     });
+        //     throw new AirtableError('Failed to update record', {
+        //         recordId: record.id,
+        //         error: error.message
+        //     });
+        // }
     }
 }
 
