@@ -1,3 +1,4 @@
+import fs from 'fs';
 import 'dotenv/config';
 import { lookupDIN, validateDIN, delay } from './curl-utils.js';
 import { DIN } from './data-mapping.js';
@@ -182,7 +183,9 @@ const run = async () => {
     await airtable.initialize();
     
     try {
-        const records = airtable.getAllRecords().sort(() => Math.random() - 0.5);
+        const records = config.testMode 
+            ? airtable.getAllRecords().sort(() => Math.random() - 0.5).slice(0, 100)
+            : airtable.getAllRecords().sort(() => Math.random() - 0.5);
         const BATCH_SIZE = config.airtable.batchSize;
         const BATCH_DELAY = config.airtable.batchDelay;
 
@@ -204,6 +207,20 @@ const run = async () => {
         }
 
         logger.logReport(report, true);
+
+        // dump the report and network analysis to a file with the current date and time
+        const date = new Date().toISOString();
+        const filename = `report-${date}.json`;
+        const reportData = {
+            ...report,
+            networkAnalysis: report.getNetworkAnalysis()
+        };
+        // Create tmp directory if it doesn't exist
+        if (!fs.existsSync('tmp')) {
+            fs.mkdirSync('tmp');
+        }
+        fs.writeFileSync(`tmp/${filename}`, JSON.stringify(reportData, null, 2));
+
     } catch (err) {
         logger.error('Script failed:', err);
     }

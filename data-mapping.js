@@ -91,22 +91,24 @@ export const DOCCS_TO_AIR = {
         test: (air, doccs) => air === toTitleCase(doccs),
         update: (doccs) => toTitleCase(doccs)
     },
-    // 'race': {
-    //     id: '', //'Race'
-    //     test: (air, doccs) => air === doccs,
-    //     update: (doccs) => doccs
-    // },
+    'race': {
+        id: 'fldMbteGxI06RGghM', //'Race'
+        type: 'text',
+        test: (air, doccs) => air === doccs,
+        update: (doccs) => doccs
+    },
     'paroleHearingType': {
         id: 'fld1W4lMm0iLcV9ui', //'Parole Interview Type'
         type: 'text',
         test: (air, doccs) => air === doccs,
         update: (doccs) => doccs
     },
-    // 'paroleEligDate': {
-    //     id: '', //'Parole Eligibility Date'
-    //     test: (air, doccs) => air === doccs,
-    //     update: (doccs) => doccs
-    // },
+    'paroleEligDate': {
+        id: 'fldQ6fmoi52aTsQmw', //'Parole Eligibility Date'
+        type: 'date',
+        test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
+        update: (doccs) => getISOfromDOCCSDateString(doccs)
+    },
     'earliestReleaseDate': {
         id: 'fldzGsyKz7ZNV9S7A', //'Earliest Release Date'
         type: 'date',
