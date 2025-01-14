@@ -183,7 +183,7 @@ const run = async () => {
     await airtable.initialize();
     
     try {
-        const records = config.testMode 
+        const records = config.fewerRecords 
             ? airtable.getAllRecords().sort(() => Math.random() - 0.5).slice(0, 100)
             : airtable.getAllRecords().sort(() => Math.random() - 0.5);
         const BATCH_SIZE = config.airtable.batchSize;

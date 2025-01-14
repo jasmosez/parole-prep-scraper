@@ -9,5 +9,5 @@ export const config = {
         batchSize: parseInt(process.env.BATCH_SIZE, 10) || 50,
         batchDelay: parseInt(process.env.BATCH_DELAY, 10) || 10000,
     },
-    testMode: process.env.TEST_MODE === 'true'
+    fewerRecords: process.env.FEWER_RECORDS === 'true'
 }; 
