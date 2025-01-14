@@ -148,31 +148,34 @@ export class AirtableService {
     }
 
     async updateRecord(record, changes) {
-        // TODO: Implement this
-        // const updateFields = changes.reduce((acc, change) => {
-        //     if (change.error) {
-        //         return acc;
-        //     }
-        //     acc[change.field] = change.newValue;
-        //     return acc;
-        // }, {});
+        const updateFields = changes.reduce((acc, change) => {
+            if (change.error) {
+                return acc;
+            }
+            acc[change.field] = change.newValue;
+            return acc;
+        }, {});
 
-        // try {
-        //     await record.updateFields(updateFields);
-        //     logger.debug('Record updated', { 
-        //         recordId: record.id, 
-        //         fields: Object.keys(updateFields) 
-        //     });
-        // } catch (error) {
-        //     logger.error('Failed to update record', error, {
-        //         recordId: record.id,
-        //         fields: Object.keys(updateFields)
-        //     });
-        //     throw new AirtableError('Failed to update record', {
-        //         recordId: record.id,
-        //         error: error.message
-        //     });
-        // }
+        try {
+            await this.table.update(record.id, updateFields, { typecast: config.enableTypecast });
+            logger.debug('Record updated', { 
+                recordId: record.id, 
+                fields: Object.keys(updateFields) 
+            });
+        } catch (error) {
+            logger.error('Failed to update record', error, {
+                recordId: record.id,
+                fields: Object.keys(updateFields)
+            });
+            throw new AirtableError('Failed to update record', {
+                recordId: record.id,
+                error: error.message
+            });
+        }
+    }
+
+    async takeSnapshot() {
+        // TODO: Implement this
     }
 }
 

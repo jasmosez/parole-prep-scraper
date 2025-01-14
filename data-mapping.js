@@ -1,3 +1,5 @@
+import { config } from './config.js';
+
 // Helper functions
 export const toTitleCase = (str) => {
     return str.split(' ').map(word => {
@@ -50,26 +52,22 @@ export const DIN = 'DIN';
 
 export const DOCCS_TO_AIR = {
     'facility': {
-        id: 'fldBgfrJtoRM2NY9s', //'Housing / Releasing Facility'
-        type: 'multipleSelects',
+        ...config.airtable.fieldMappings['facility'],
         test: (air, doccs) => air?.includes(toTitleCase(doccs)),
         update: (doccs) => [toTitleCase(doccs)]
     },
     'paroleHearingDate': {
-        id: 'fldptoJdU40n5dlO7', //Next Interview Date [DOCCS]
-        type: 'date',
+        ...config.airtable.fieldMappings['paroleHearingDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },   
     'releaseDate': {
-        id: 'flduQFFHqzBME4Ml1', //Latest Release Date / Type (Released People Only) [DOCCS]
-        type: 'date',
+        ...config.airtable.fieldMappings['releaseDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
     'sentence': {
-        id: 'fldAx3FzIpIkZrmLA', // 'Sentence'
-        type: 'text',
+        ...config.airtable.fieldMappings['sentence'],
         test: (air, doccs) => {
             const { minSentence, maxSentence } = doccs;
             const minValue = convertToDecimalYears(minSentence);
@@ -86,39 +84,33 @@ export const DOCCS_TO_AIR = {
         requiredFields: ['minSentence', 'maxSentence']
     },
     'county': {
-        id: 'fldOc0FgeFDZhxj8n', //'County'
-        type: 'text',
+        ...config.airtable.fieldMappings['county'],
         test: (air, doccs) => air === toTitleCase(doccs),
         update: (doccs) => toTitleCase(doccs)
     },
     'race': {
-        id: 'fldMbteGxI06RGghM', //'Race'
-        type: 'text',
+            ...config.airtable.fieldMappings['race'],
         test: (air, doccs) => air === doccs,
         update: (doccs) => doccs
     },
     'paroleHearingType': {
-        id: 'fld1W4lMm0iLcV9ui', //'Parole Interview Type'
-        type: 'text',
+        ...config.airtable.fieldMappings['paroleHearingType'],
         test: (air, doccs) => air === doccs,
         update: (doccs) => doccs
     },
     'paroleEligDate': {
-        id: 'fldQ6fmoi52aTsQmw', //'Parole Eligibility Date'
-        type: 'date',
+        ...config.airtable.fieldMappings['paroleEligDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
     'earliestReleaseDate': {
-        id: 'fldzGsyKz7ZNV9S7A', //'Earliest Release Date'
-        type: 'date',
+        ...config.airtable.fieldMappings['earliestReleaseDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
     'dateOfBirth': {
-        id: 'fldmVco0UMW7hxj4I', //'Date of Birth'
-        type: 'date',
+        ...config.airtable.fieldMappings['dateOfBirth'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
-}
+};

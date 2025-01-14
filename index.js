@@ -150,7 +150,7 @@ const getDoccsValue = (data, doccsKey, fieldMapping) => {
 const updateRecordIfNeeded = async (record, changes, din) => {
     try {
         if (changes.length > 0) {
-            await airtable.updateRecord(record, changes);
+            config.enableUpdateRecords && await airtable.updateRecord(record, changes);
             report.addRecord({
                 recordId: record.id,
                 din,
@@ -180,9 +180,20 @@ const updateRecordIfNeeded = async (record, changes, din) => {
 };
 
 const run = async () => {
+    logger.info('🚀 Starting script', { 
+        environment: config.environment, 
+        fewerRecords: config.fewerRecords,
+        enableUpdateRecords: config.enableUpdateRecords,
+        enableTypecast: config.enableTypecast
+    });
+    
     await airtable.initialize();
     
     try {
+        // take a snapshot of the base before we start
+        await airtable.takeSnapshot();
+
+        // get all records
         const records = config.fewerRecords 
             ? airtable.getAllRecords().sort(() => Math.random() - 0.5).slice(0, 100)
             : airtable.getAllRecords().sort(() => Math.random() - 0.5);
@@ -210,7 +221,7 @@ const run = async () => {
 
         // dump the report and network analysis to a file with the current date and time
         const date = new Date().toISOString();
-        const filename = `report-${date}.json`;
+        const filename = `report-${config.environment}-${date}.json`;
         const reportData = {
             ...report,
             networkAnalysis: report.getNetworkAnalysis()
