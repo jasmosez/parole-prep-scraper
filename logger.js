@@ -5,6 +5,8 @@ const LOG_LEVELS = {
     ERROR: 'error'
 };
 
+//TODO: if we're in production, don't log DEBUG messages
+
 class Logger {
     constructor(prefix = 'DOCCS-Sync') {
         this.prefix = prefix;

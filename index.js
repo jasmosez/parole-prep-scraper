@@ -7,6 +7,7 @@ import { airtable } from './airtable-service.js';
 import { logger } from './logger.js';
 import { CurlEmptyResponseError } from './errors.js';
 import { config } from './config.js';
+import * as functions from '@google-cloud/functions-framework';
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -179,7 +180,7 @@ const updateRecordIfNeeded = async (record, changes, din) => {
     }
 };
 
-const run = async () => {
+export const run = async () => {
     logger.info('🚀 Starting script', { 
         environment: config.environment, 
         fewerRecords: config.fewerRecords,
@@ -219,6 +220,7 @@ const run = async () => {
 
         logger.logReport(report, true);
 
+        // TODO: we need to dump the report to somewhere in GCP that we can access the artifact
         // dump the report and network analysis to a file with the current date and time
         const date = new Date().toISOString();
         const filename = `report-${config.environment}-${date}.json`;
@@ -237,12 +239,35 @@ const run = async () => {
     }
 };
 
-// Execute the script
-(async () => {
+// TODO: each run is adding to the same Report instance. And we don't want that.
+// Cloud Function handler
+functions.http('runSync', async (req, res) => {
+  // Verify the request is from Cloud Scheduler
+  const bearer = req.header('Authorization');
+  if (!bearer || !bearer.startsWith('Bearer ')) {
+    logger.error('Unauthorized request');
+    return res.status(403).send('Unauthorized');
+  }
+
+  try {
+    logger.info('Starting scheduled sync');
+    await run();
+    res.status(200).send('Sync completed');
+  } catch (error) {
+    logger.error('Sync failed:', error);
+    res.status(500).send('Sync failed');
+  }
+});
+
+// Allow running directly with node
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  (async () => {
     try {
-        await run();
+      await run();
     } catch (err) {
-        logger.error('Script failed:', err);
+      logger.error('Script failed:', err);
+      process.exit(1);
     }
-})();  
+  })();
+}
 
