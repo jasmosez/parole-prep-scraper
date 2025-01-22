@@ -61,8 +61,8 @@ export const DOCCS_TO_AIR = {
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },   
-    'releaseDate': {
-        ...config.airtable.fieldMappings['releaseDate'],
+    'latestRelDate': {
+        ...config.airtable.fieldMappings['latestRelDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
     },
@@ -107,6 +107,11 @@ export const DOCCS_TO_AIR = {
         ...config.airtable.fieldMappings['earliestReleaseDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
         update: (doccs) => getISOfromDOCCSDateString(doccs)
+    },
+    'earliestReleaseType': {
+        ...config.airtable.fieldMappings['earliestReleaseType'],
+        test: (air, doccs) => air === doccs,
+        update: (doccs) => doccs
     },
     'dateOfBirth': {
         ...config.airtable.fieldMappings['dateOfBirth'],

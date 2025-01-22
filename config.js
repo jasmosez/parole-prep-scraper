@@ -15,7 +15,7 @@ const FIELD_MAPPINGS = {
             id: 'fldptoJdU40n5dlO7',
             type: 'date'
         },
-        releaseDate: {
+        latestRelDate: {
             id: 'flduQFFHqzBME4Ml1',
             type: 'date'
         },
@@ -43,6 +43,10 @@ const FIELD_MAPPINGS = {
             id: 'fldzGsyKz7ZNV9S7A',
             type: 'date'
         },
+        earliestReleaseType: {
+            id: 'fldpbewHhqDldY4vW',
+            type: 'text'
+        },
         dateOfBirth: {
             id: 'fldmVco0UMW7hxj4I',
             type: 'date'
@@ -59,7 +63,7 @@ const FIELD_MAPPINGS = {
             id: 'fldVdinPD2V8dpGQb',
             type: 'date'
         },
-        releaseDate: {
+        latestRelDate: {
             id: 'fldw3U5tFxdrplE9G',
             type: 'date'
         },
@@ -86,6 +90,10 @@ const FIELD_MAPPINGS = {
         earliestReleaseDate: {
             id: 'fldRit0cX7JknMNcA',
             type: 'date'
+        },
+        earliestReleaseType: {
+            id: 'fldEIcJuHrhPpqeAd',
+            type: 'text'
         },
         dateOfBirth: {
             id: 'fldSNGnkmWfUDItaJ',
