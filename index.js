@@ -8,6 +8,11 @@ import { logger } from './logger.js';
 import { CurlEmptyResponseError } from './errors.js';
 import { config } from './config.js';
 import * as functions from '@google-cloud/functions-framework';
+import { Storage } from '@google-cloud/storage';
+
+// Initialize storage client at the top of your file
+const storage = new Storage();
+const BUCKET_NAME = config.googleCloud.bucketName; 
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -220,22 +225,37 @@ export const run = async () => {
 
         logger.logReport(report, true);
 
-        // TODO: we need to dump the report to somewhere in GCP that we can access the artifact
-        // dump the report and network analysis to a file with the current date and time
+        // Save report to Cloud Storage
         const date = new Date().toISOString();
-        const filename = `report-${config.environment}-${date}.json`;
+        const filename = `reports/report-${config.environment}-${date}.json`;
         const reportData = {
             ...report,
             networkAnalysis: report.getNetworkAnalysis()
         };
-        // Create tmp directory if it doesn't exist
-        if (!fs.existsSync('tmp')) {
-            fs.mkdirSync('tmp');
+
+        // Upload to Cloud Storage
+        const bucket = storage.bucket(BUCKET_NAME);
+        const file = bucket.file(filename);
+        
+        await file.save(JSON.stringify(reportData, null, 2), {
+            contentType: 'application/json',
+            metadata: {
+                createdAt: date,
+                environment: config.environment
+            }
+        });
+
+        logger.info(`Report saved to gs://${BUCKET_NAME}/${filename}`);
+        
+        // if any of the fields corresponding to causeAlert === true, then log an alert
+        const alertFieldNames = Object.entries(airtable.getAllValidatedMappings()).filter(([_, field]) => field.causeAlert).map(([_, field]) => field.fieldName);
+        if (Object.keys(report.summary.byFieldChange).some(field => alertFieldNames.includes(field))) {
+            logger.info('Report contains causeAlert fields', { causeAlert: true });
         }
-        fs.writeFileSync(`tmp/${filename}`, JSON.stringify(reportData, null, 2));
 
     } catch (err) {
         logger.error('Script failed:', err);
+        throw err; // Re-throw to ensure Cloud Function marks as failed
     }
 };
 

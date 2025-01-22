@@ -54,17 +54,20 @@ export const DOCCS_TO_AIR = {
     'facility': {
         ...config.airtable.fieldMappings['facility'],
         test: (air, doccs) => air?.includes(toTitleCase(doccs)),
-        update: (doccs) => [toTitleCase(doccs)]
+        update: (doccs) => [toTitleCase(doccs)],
+        causeAlert: false
     },
     'paroleHearingDate': {
         ...config.airtable.fieldMappings['paroleHearingDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
-        update: (doccs) => getISOfromDOCCSDateString(doccs)
+        update: (doccs) => getISOfromDOCCSDateString(doccs),
+        causeAlert: true
     },   
     'latestRelDate': {
         ...config.airtable.fieldMappings['latestRelDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
-        update: (doccs) => getISOfromDOCCSDateString(doccs)
+        update: (doccs) => getISOfromDOCCSDateString(doccs),
+        causeAlert: true
     },
     'sentence': {
         ...config.airtable.fieldMappings['sentence'],
@@ -81,41 +84,49 @@ export const DOCCS_TO_AIR = {
             const maxValue = convertToDecimalYears(maxSentence);
             return `${minValue} - ${maxValue}`;
         },
-        requiredFields: ['minSentence', 'maxSentence']
+        requiredFields: ['minSentence', 'maxSentence'],
+        causeAlert: false
     },
     'county': {
         ...config.airtable.fieldMappings['county'],
         test: (air, doccs) => air === toTitleCase(doccs),
-        update: (doccs) => toTitleCase(doccs)
+        update: (doccs) => toTitleCase(doccs),
+        causeAlert: false
     },
     'race': {
             ...config.airtable.fieldMappings['race'],
         test: (air, doccs) => air === doccs,
-        update: (doccs) => doccs
+        update: (doccs) => doccs,
+        causeAlert: false
     },
     'paroleHearingType': {
         ...config.airtable.fieldMappings['paroleHearingType'],
         test: (air, doccs) => air === doccs,
-        update: (doccs) => doccs
+        update: (doccs) => doccs,
+        causeAlert: false
     },
     'paroleEligDate': {
         ...config.airtable.fieldMappings['paroleEligDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
-        update: (doccs) => getISOfromDOCCSDateString(doccs)
+        update: (doccs) => getISOfromDOCCSDateString(doccs),
+        causeAlert: false
     },
     'earliestReleaseDate': {
         ...config.airtable.fieldMappings['earliestReleaseDate'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
-        update: (doccs) => getISOfromDOCCSDateString(doccs)
+        update: (doccs) => getISOfromDOCCSDateString(doccs),
+        causeAlert: false
     },
     'earliestReleaseType': {
         ...config.airtable.fieldMappings['earliestReleaseType'],
         test: (air, doccs) => air === doccs,
-        update: (doccs) => doccs
+        update: (doccs) => doccs,
+        causeAlert: true
     },
     'dateOfBirth': {
         ...config.airtable.fieldMappings['dateOfBirth'],
         test: (air, doccs) => air === getISOfromDOCCSDateString(doccs),
-        update: (doccs) => getISOfromDOCCSDateString(doccs)
+        update: (doccs) => getISOfromDOCCSDateString(doccs),
+        causeAlert: false
     },
 };

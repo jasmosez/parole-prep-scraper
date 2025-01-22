@@ -117,5 +117,8 @@ export const config = {
     fewerRecords: process.env.FEWER_RECORDS === 'true',
     enableTypecast: process.env.ENABLE_TYPECAST === 'true',
     enableUpdateRecords: process.env.ENABLE_UPDATE_RECORDS === 'true',
-    environment: environment
+    environment: environment,
+    googleCloud: {
+        bucketName: process.env.GOOGLE_CLOUD_BUCKET_NAME
+    }
 }; 
