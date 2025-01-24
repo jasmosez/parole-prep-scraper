@@ -234,6 +234,7 @@ export const run = async () => {
         const date = new Date().toISOString();
         const filename = `reports/report-${config.environment}-${date}.json`;
         const reportData = {
+            outcomeDetails: report.getOutcomeDetails(),
             ...report,
             networkAnalysis: report.getNetworkAnalysis()
         };

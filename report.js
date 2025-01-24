@@ -198,6 +198,25 @@ class Report {
 
         return recommendations;
     }
+
+    getOutcomeDetails() {
+        return Object.values(RecordOutcome).reduce((acc, outcome) => {
+            const records = this.getRecordsByOutcome(outcome);
+            if (records.length > 0) {
+                acc[outcome] = records.map(record => ({
+                    din: record.din,
+                    ...(record.changes?.length > 0 ? {
+                        changes: record.changes.map(change => ({
+                            field: change.field,
+                            previous: change.oldValue,
+                            new: change.newValue
+                        }))
+                    } : {})
+                }));
+            }
+            return acc;
+        }, {});
+    }
 }
 
 // Then create and export the factory function
