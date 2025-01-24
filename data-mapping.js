@@ -27,17 +27,25 @@ export const convertToDecimalYears = (sentence) => {
     return Number(years.toFixed(2));
 };
 
+/**
+ * Converts a DOCCS date string to ISO format (YYYY-MM-DD)
+ * @param {string} doccs - Date string in one of these formats: MM/DD/YYYY, MM/YYYY, MM/DD/YY
+ * @returns {string} Date in ISO format YYYY-MM-DD, or empty string if invalid
+ */
 const getISOfromDOCCSDateString = (doccs) => {
     // Handle empty/invalid values
     if (!doccs) return '';
     
-    // Parse date string using regex to handle both formats
-    const dateMatch = doccs.match(/^(\d{2})[/-](?:(\d{2})[/-])?(\d{4})$/);
+    // Parse date string using regex to handle all formats (MM/DD/YYYY, MM/YYYY, and MM/DD/YY)
+    const dateMatch = doccs.match(/^(\d{2})[/-](?:(\d{2})[/-])?(\d{2,4})$/);
     if (!dateMatch) return '';
     
-    const [, month, day, year] = dateMatch;
+    const [, month, day, yearPart] = dateMatch;
     // If no day provided (MM/YYYY format), use first of month
     const dayValue = day || '01';
+    
+    // Convert 2-digit year to 4-digit year (assuming 20YY for now, as we're dealing with recent dates)
+    const year = yearPart.length === 2 ? `20${yearPart}` : yearPart;
     
     // Validate month/day/year
     const date = new Date(`${year}-${month}-${dayValue}`);

@@ -121,8 +121,8 @@ export class AirtableService {
                     }
                     break;
                 case 'date':
-                    if (value !== '' && !(value instanceof Date) && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-                        throw new DataTypeError('Expected date string (YYYY-MM-DD) or empty string', { 
+                    if (!(value instanceof Date) && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                        throw new DataTypeError('Expected date string (YYYY-MM-DD)', { 
                             field: fieldName, 
                             value, 
                             expectedType: 'date' 
