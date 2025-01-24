@@ -13,16 +13,16 @@ steps:
         cat config.yaml > .env.yaml
 
         # Add sensitive vars from Secret Manager (production)
-        echo "AIRTABLE_API_KEY=\"$(gcloud secrets versions access latest --secret=airtable-api-key)\"" >> .env.yaml
-        echo "AIRTABLE_BASE_ID=\"$(gcloud secrets versions access latest --secret=airtable-base-id)\"" >> .env.yaml
-        echo "AIRTABLE_TABLE_ID=\"$(gcloud secrets versions access latest --secret=airtable-table-id)\"" >> .env.yaml
-        echo "AIRTABLE_VIEW=\"$(gcloud secrets versions access latest --secret=airtable-view)\"" >> .env.yaml
+        echo "AIRTABLE_API_KEY=\"$(gcloud secrets versions access latest --secret=AIRTABLE_API_KEY)\"" >> .env.yaml
+        echo "AIRTABLE_BASE_ID=\"$(gcloud secrets versions access latest --secret=AIRTABLE_BASE_ID)\"" >> .env.yaml
+        echo "AIRTABLE_TABLE_ID=\"$(gcloud secrets versions access latest --secret=AIRTABLE_TABLE_ID)\"" >> .env.yaml
+        echo "AIRTABLE_VIEW=\"$(gcloud secrets versions access latest --secret=AIRTABLE_VIEW)\"" >> .env.yaml
 
         # Add sensitive vars from Secret Manager (staging)
-        echo "STAGING_AIRTABLE_API_KEY=\"$(gcloud secrets versions access latest --secret=staging-airtable-api-key)\"" >> .env.yaml
-        echo "STAGING_AIRTABLE_BASE_ID=\"$(gcloud secrets versions access latest --secret=staging-airtable-base-id)\"" >> .env.yaml
-        echo "STAGING_AIRTABLE_TABLE_ID=\"$(gcloud secrets versions access latest --secret=staging-airtable-table-id)\"" >> .env.yaml
-        echo "STAGING_AIRTABLE_VIEW=\"$(gcloud secrets versions access latest --secret=staging-airtable-view)\"" >> .env.yaml
+        echo "STAGING_AIRTABLE_API_KEY=\"$(gcloud secrets versions access latest --secret=STAGING_AIRTABLE_API_KEY)\"" >> .env.yaml
+        echo "STAGING_AIRTABLE_BASE_ID=\"$(gcloud secrets versions access latest --secret=STAGING_AIRTABLE_BASE_ID)\"" >> .env.yaml
+        echo "STAGING_AIRTABLE_TABLE_ID=\"$(gcloud secrets versions access latest --secret=STAGING_AIRTABLE_TABLE_ID)\"" >> .env.yaml
+        echo "STAGING_AIRTABLE_VIEW=\"$(gcloud secrets versions access latest --secret=STAGING_AIRTABLE_VIEW)\"" >> .env.yaml
 
   # Install dependencies
   - name: 'node:18'
