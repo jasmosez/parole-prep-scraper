@@ -1,0 +1,11 @@
+# ENVIRONMENT SELECTION
+# Set to 'test' (or nothing) to use test config; set to 'staging' to use staging config; set to 'production' for production config
+ENV: "staging"
+
+# OPTIONS
+BATCH_SIZE: "50"
+BATCH_DELAY: "10000"
+FEWER_RECORDS: "100"
+RANDOMIZE_RECORDS: "false"
+ENABLE_TYPECAST: "false"
+ENABLE_UPDATE_RECORDS: "true" 
