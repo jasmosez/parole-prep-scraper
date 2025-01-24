@@ -1,0 +1,22 @@
+steps:
+  # Install dependencies
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['install']
+
+  # Deploy to Cloud Functions
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud functions deploy runSync \
+          --runtime nodejs18 \
+          --trigger-http \
+          --region us-east1 \
+          --memory 256MB \
+          --timeout 540s \
+          --env-vars-file .env.yaml
+
+# Optional: Specify a timeout
+timeout: '1800s' 
