@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 export const ENV = {
     TEST: 'test',
+    STAGING: 'staging',
     PRODUCTION: 'production'
 }
 
@@ -49,6 +50,52 @@ const FIELD_MAPPINGS = {
         },
         dateOfBirth: {
             id: 'fldmVco0UMW7hxj4I',
+            type: 'date'
+        }
+    },
+    [ENV.STAGING]: {
+        facility: {
+            id: 'fldKGntODsYIBeOS8',
+            type: 'multipleSelects'
+        },
+        paroleHearingDate: {
+            id: 'fldyTwLi487jEEbxN',
+            type: 'date'
+        },
+        latestRelDate: {
+            id: 'fldDgNHMADIIdvC4H',
+            type: 'date'
+        },
+        sentence: {
+            id: 'fldJXbHEStPgyScug',
+            type: 'text'
+        },
+        county: {
+            id: 'fldXC8HloJKVQY9R3',
+            type: 'text'
+        },
+        race: {
+            id: 'fldVBBgLHM72q760s',
+            type: 'text'
+        },
+        paroleHearingType: {
+            id: 'fldamcnRw4pHLmZdY',
+            type: 'text'
+        },
+        paroleEligDate: {
+            id: 'fldZwnots996sTG5c',
+            type: 'date'
+        },
+        earliestReleaseDate: {
+            id: 'fldI6AAPJb6JuAIQg',
+            type: 'date'
+        },
+        earliestReleaseType: {
+            id: 'fldyBmyMruKhMpUeC',
+            type: 'text'
+        },
+        dateOfBirth: {
+            id: 'fldvlkq54Q33QY9No',
             type: 'date'
         }
     },
@@ -106,15 +153,52 @@ const environment = process.env.ENV || ENV.TEST;
 
 export const config = {
     airtable: {
-        apiKey: environment === ENV.PRODUCTION ? process.env.AIRTABLE_API_KEY : process.env.TEST_AIRTABLE_API_KEY,
-        baseId: environment === ENV.PRODUCTION ? process.env.AIRTABLE_BASE_ID : process.env.TEST_AIRTABLE_BASE_ID,
-        tableId: environment === ENV.PRODUCTION ? process.env.AIRTABLE_TABLE_ID : process.env.TEST_AIRTABLE_TABLE_ID,
-        view: environment === ENV.PRODUCTION ? process.env.AIRTABLE_VIEW : process.env.TEST_AIRTABLE_VIEW,
+        apiKey: (() => {
+            switch(environment) {
+                case ENV.PRODUCTION:
+                    return process.env.AIRTABLE_API_KEY;
+                case ENV.STAGING:
+                    return process.env.STAGING_AIRTABLE_API_KEY;
+                default:
+                    return process.env.TEST_AIRTABLE_API_KEY;
+            }
+        })(),
+        baseId: (() => {
+            switch(environment) {
+                case ENV.PRODUCTION:
+                    return process.env.AIRTABLE_BASE_ID;
+                case ENV.STAGING:
+                    return process.env.STAGING_AIRTABLE_BASE_ID;
+                default:
+                    return process.env.TEST_AIRTABLE_BASE_ID;
+            }
+        })(),
+        tableId: (() => {
+            switch(environment) {
+                case ENV.PRODUCTION:
+                    return process.env.AIRTABLE_TABLE_ID;
+                case ENV.STAGING:
+                    return process.env.STAGING_AIRTABLE_TABLE_ID;
+                default:
+                    return process.env.TEST_AIRTABLE_TABLE_ID;
+            }
+        })(),
+        view: (() => {
+            switch(environment) {
+                case ENV.PRODUCTION:
+                    return process.env.AIRTABLE_VIEW;
+                case ENV.STAGING:
+                    return process.env.STAGING_AIRTABLE_VIEW;
+                default:
+                    return process.env.TEST_AIRTABLE_VIEW;
+            }
+        })(),
         batchSize: parseInt(process.env.BATCH_SIZE, 10) || 50,
         batchDelay: parseInt(process.env.BATCH_DELAY, 10) || 10000,
         fieldMappings: FIELD_MAPPINGS[environment]
     },
-    fewerRecords: process.env.FEWER_RECORDS === 'true',
+    fewerRecords: process.env.FEWER_RECORDS ? parseInt(process.env.FEWER_RECORDS, 10) : false,
+    randomizeRecords: process.env.RANDOMIZE_RECORDS === 'true',
     enableTypecast: process.env.ENABLE_TYPECAST === 'true',
     enableUpdateRecords: process.env.ENABLE_UPDATE_RECORDS === 'true',
     environment: environment,

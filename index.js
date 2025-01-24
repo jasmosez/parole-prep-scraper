@@ -200,9 +200,14 @@ export const run = async () => {
         await airtable.takeSnapshot();
 
         // get all records
-        const records = config.fewerRecords 
-            ? airtable.getAllRecords().sort(() => Math.random() - 0.5).slice(0, 100)
-            : airtable.getAllRecords().sort(() => Math.random() - 0.5);
+        let records = airtable.getAllRecords()
+
+        // randomize the records if enabled
+        records = config.randomizeRecords ? records.sort(() => Math.random() - 0.5) : records;
+
+        // limit the number of records if enabled
+        records = config.fewerRecords ? records.slice(0, config.fewerRecords) : records;
+
         const BATCH_SIZE = config.airtable.batchSize;
         const BATCH_DELAY = config.airtable.batchDelay;
 
