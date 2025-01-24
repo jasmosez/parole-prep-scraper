@@ -1,3 +1,7 @@
+# Specify logs bucket
+options:
+  logging: CLOUD_LOGGING_ONLY  # This is the simplest solution
+
 steps:
   # Create env.yaml combining config and secrets
   - name: 'gcr.io/cloud-builders/gcloud'
