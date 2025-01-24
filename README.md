@@ -20,6 +20,7 @@ env.yaml was created when we were deploying directly to Google Cloud Functions v
 - Airtable base ID
 - Airtable table ID
 - Airtable view ID
+- Google Cloud Storage bucket -- assumes Application Default Credentials are set up
 
 ## Google Cloud
 
