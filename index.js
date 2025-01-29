@@ -8,11 +8,10 @@ import { logger } from './logger.js';
 import { CurlEmptyResponseError } from './errors.js';
 import { config } from './config.js';
 import * as functions from '@google-cloud/functions-framework';
-import { Storage } from '@google-cloud/storage';
+import { StorageService } from './storage-service.js';
 
-// Initialize storage client at the top of your file
-const storage = new Storage();
-const BUCKET_NAME = config.googleCloud.bucketName; 
+// Initialize storage service at the top of your file
+const storageService = new StorageService(config.googleCloud.bucketName);
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -232,44 +231,14 @@ export const run = async () => {
         // TODO: remove this once we deploy to prod
         logger.logReport(report, true);
 
-        // Save report to Cloud Storage
-        const date = new Date().toISOString();
-        const filename = `reports/${config.environment}-${date}-report.json`;
-        const reportData = {
-            ...report,
-            networkAnalysis: report.getNetworkAnalysis()
-        };
+        // Create and save each report to Cloud Storage
+        await storageService.saveReports(report, config.environment);
 
-        // Upload to Cloud Storage
-        const bucket = storage.bucket(BUCKET_NAME);
-        const file = bucket.file(filename);
-        
-        await file.save(JSON.stringify(reportData, null, 2), {
-            contentType: 'application/json',
-            metadata: {
-                createdAt: date,
-                environment: config.environment
-            }
-        });
-
-        logger.info(`Report saved to gs://${BUCKET_NAME}/${filename}`);
-
-        // save the text report to Cloud Storage
-        const textReport = report.getTextReport();
-        const textFilename = `staff-reports/${config.environment}-${date}-staff-report.txt`;
-        const textFile = bucket.file(textFilename);
-        await textFile.save(textReport, {
-            contentType: 'text/plain',
-            metadata: {
-                createdAt: date,
-                environment: config.environment
-            }
-        });
-
-        logger.info(`Text report saved to gs://${BUCKET_NAME}/${textFilename}`);
-        
         // if any of the fields corresponding to causeAlert === true, then log an alert
-        const alertFieldNames = Object.entries(airtable.getAllValidatedMappings()).filter(([_, field]) => field.causeAlert).map(([_, field]) => field.fieldName);
+        const alertFieldNames = Object.entries(airtable.getAllValidatedMappings())
+            .filter(([_, field]) => field.causeAlert)
+            .map(([_, field]) => field.fieldName);
+
         if (Object.keys(report.summary.byFieldChange).some(field => alertFieldNames.includes(field))) {
             logger.info('Report contains causeAlert fields', { causeAlert: true });
         }
