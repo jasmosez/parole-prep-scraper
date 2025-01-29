@@ -222,19 +222,20 @@ export const run = async () => {
             report.addBatchTime(batchIndex, start, end);
             
             if (i + BATCH_SIZE < records.length) {
+                // TODO: remove this once we deploy to prod
                 logger.logReport(report);
                 logger.info(`Waiting before next batch`, { delay: BATCH_DELAY });
                 await delay(BATCH_DELAY);
             }
         }
 
+        // TODO: remove this once we deploy to prod
         logger.logReport(report, true);
 
         // Save report to Cloud Storage
         const date = new Date().toISOString();
-        const filename = `reports/report-${config.environment}-${date}.json`;
+        const filename = `reports/${config.environment}-${date}-report.json`;
         const reportData = {
-            outcomeDetails: report.getOutcomeDetails(),
             ...report,
             networkAnalysis: report.getNetworkAnalysis()
         };
@@ -252,6 +253,20 @@ export const run = async () => {
         });
 
         logger.info(`Report saved to gs://${BUCKET_NAME}/${filename}`);
+
+        // save the text report to Cloud Storage
+        const textReport = report.getTextReport();
+        const textFilename = `staff-reports/${config.environment}-${date}-staff-report.txt`;
+        const textFile = bucket.file(textFilename);
+        await textFile.save(textReport, {
+            contentType: 'text/plain',
+            metadata: {
+                createdAt: date,
+                environment: config.environment
+            }
+        });
+
+        logger.info(`Text report saved to gs://${BUCKET_NAME}/${textFilename}`);
         
         // if any of the fields corresponding to causeAlert === true, then log an alert
         const alertFieldNames = Object.entries(airtable.getAllValidatedMappings()).filter(([_, field]) => field.causeAlert).map(([_, field]) => field.fieldName);

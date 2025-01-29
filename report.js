@@ -199,23 +199,82 @@ class Report {
         return recommendations;
     }
 
-    getOutcomeDetails() {
-        return Object.values(RecordOutcome).reduce((acc, outcome) => {
+    getTextReport() {
+        const timestamp = new Date().toLocaleString('en-US', {
+            year: 'numeric', 
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+        const summary = this.getSummary();
+        let report = [];
+
+        // Header
+        report.push('DOCCS SYNC SCRIPT REPORT');
+        report.push(timestamp);
+        report.push('');
+
+        // Summary section
+        report.push('SUMMARY');
+        report.push(`- Total Records: ${summary.total}`);
+        report.push('- By Outcome:');
+        Object.entries(summary.byOutcome).forEach(([outcome, count]) => {
+            report.push(`    - ${outcome}: ${count}`);
+        });
+
+        // Field changes summary
+        if (Object.keys(summary.byFieldChange).length > 0) {
+            report.push('- By Field Change:');
+            Object.entries(summary.byFieldChange).forEach(([field, count]) => {
+                report.push(`    - ${field}: ${count}`);
+            });
+        }
+        report.push('');
+
+        // Changed records detail section
+        const changedRecords = this.getRecordsByOutcome(RecordOutcome.CHANGED);
+        if (changedRecords.length > 0) {
+            report.push('CHANGED');
+            
+            // Group changes by field
+            const changesByField = {};
+            changedRecords.forEach(record => {
+                record.changes.forEach(change => {
+                    if (!changesByField[change.field]) {
+                        changesByField[change.field] = [];
+                    }
+                    changesByField[change.field].push({
+                        din: record.din,
+                        newValue: change.newValue,
+                        oldValue: change.oldValue,
+                    });
+                });
+            });
+
+            // Output each field's changes
+            Object.entries(changesByField).forEach(([field, changes]) => {
+                report.push(`Field: ${field}`);
+                changes.forEach(change => {
+                    report.push(`- ${change.din}: ${change.newValue}, previously ${change.oldValue}`);
+                });
+                report.push('');
+            });
+        }
+
+        // Other outcome sections
+        const outcomeTypes = Object.values(RecordOutcome).filter(type => type !== RecordOutcome.CHANGED);
+        outcomeTypes.forEach(outcome => {
             const records = this.getRecordsByOutcome(outcome);
             if (records.length > 0) {
-                acc[outcome] = records.map(record => ({
-                    din: record.din,
-                    ...(record.changes?.length > 0 ? {
-                        changes: record.changes.map(change => ({
-                            field: change.field,
-                            previous: change.oldValue,
-                            new: change.newValue
-                        }))
-                    } : {})
-                }));
+                report.push(outcome);
+                report.push(records.map(r => r.din).join(', '));
+                report.push('');
             }
-            return acc;
-        }, {});
+        });
+
+        return report.join('\n');
     }
 }
 
