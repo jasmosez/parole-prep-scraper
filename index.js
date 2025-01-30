@@ -1,14 +1,13 @@
-import fs from 'fs';
 import 'dotenv/config';
-import { lookupDIN, validateDIN, delay } from './curl-utils.js';
-import { DIN } from './data-mapping.js';
-import { RecordOutcome, report } from './report.js';
-import { airtable } from './airtable-service.js';
-import { logger } from './logger.js';
-import { CurlEmptyResponseError } from './errors.js';
+import { lookupDIN, validateDIN, delay } from './lib/curl-utils.js';
+import { DIN } from './lib/data-mapping.js';
+import { RecordOutcome, report } from './lib/report.js';
+import { airtable } from './lib/airtable-service.js';
+import { logger } from './lib/logger.js';
+import { CurlEmptyResponseError } from './lib/errors.js';
 import { config } from './config.js';
 import * as functions from '@google-cloud/functions-framework';
-import { StorageService } from './storage-service.js';
+import { StorageService } from './lib/storage-service.js';
 
 // Initialize storage service at the top of your file
 const storageService = new StorageService(config.googleCloud.bucketName);
