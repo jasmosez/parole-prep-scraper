@@ -9,8 +9,9 @@ import { config } from './config.js';
 import * as functions from '@google-cloud/functions-framework';
 import { StorageService } from './lib/storage-service.js';
 
-// Initialize storage service at the top of your file
+// Initialize storage service at the top of your file and validate credentials
 const storageService = new StorageService(config.googleCloud.bucketName);
+await storageService.validateCredentials();
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);

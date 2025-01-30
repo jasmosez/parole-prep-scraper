@@ -42,7 +42,7 @@ The app writes two reports to Cloud Storage:
 You may need to periodically re-authenticate with Google Cloud to use application default credentials to access the storage bucket.
 
 ```
-gcloud auth application-default set-quota-project <project-id>
+gcloud auth application-default login
 ```
 
 ### Monitoring Logs, Alerts, and Notifications
