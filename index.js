@@ -174,6 +174,7 @@ const updateRecordIfNeeded = async (record, changes, din) => {
             din,
             outcome: RecordOutcome.UPDATE_FAILED,
             message: error.message,
+            details: error.details?.error,
             changes
         });
         logger.error('Failed to update record', error, { din });
