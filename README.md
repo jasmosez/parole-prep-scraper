@@ -28,11 +28,11 @@ Some helpful flags for development:
 
 ### Functions
 
-We deploy to Google Cloud Functions using the `gcloud` CLI. See the script in `deploy.sh` for details. It makes use of the `env.yaml` file.
+We deploy to Google Cloud Functions using the `gcloud` CLI. See the script in `deploy/deploy.sh` for details. It makes use of the `env.yaml` file.
 
 ### Scheduler
 
-We set the Cloud Trigger to run the function on a schedule. See the script in `set-trigger.sh` for details.
+We set the Cloud Trigger to run the function on a schedule. See the script in `deploy/set-trigger.sh` for details.
 
 ### Cloud Storage
 The app writes two reports to Cloud Storage:
@@ -50,5 +50,5 @@ gcloud auth application-default login
 We use Google Cloud Monitoring to track the function's performance and send alerts via email.
 If any records have changes on fields where `causeAlert == true` (see `data-mapping.js`), the function will create the log entry we are looking for.
 
-All this is set up in `monitoring-setup.sh`.
+All this is set up in `deploy/monitoring-setup.sh`.
 

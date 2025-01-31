@@ -14,8 +14,12 @@
 .gitignore
 .env
 
+
 # Ignore tmp directory
 tmp
 
 node_modules
 #!include:.gitignore
+
+# ignore deploy directory
+deploy

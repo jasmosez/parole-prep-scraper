@@ -9,10 +9,6 @@ import { config } from './config.js';
 import * as functions from '@google-cloud/functions-framework';
 import { StorageService } from './lib/storage-service.js';
 
-// Initialize storage service at the top of your file and validate credentials
-const storageService = new StorageService(config.googleCloud.bucketName);
-await storageService.validateCredentials();
-
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
     await Promise.all(batch.map((record, index) => 
@@ -191,7 +187,12 @@ export const run = async () => {
         enableUpdateRecords: config.enableUpdateRecords,
         enableTypecast: config.enableTypecast
     });
-    
+
+    // Initialize storage service
+    const storageService = new StorageService(config.googleCloud.bucketName);
+    await storageService.validateCredentials();
+
+    // Initialize Airtable
     await airtable.initialize();
     
     try {
@@ -249,9 +250,8 @@ export const run = async () => {
     }
 };
 
-// TODO: each run is adding to the same Report instance. And we don't want that.
 // Cloud Function handler
-functions.http('runSync', async (req, res) => {
+functions.http('doccsSync', async (req, res) => {
   // Verify the request is from Cloud Scheduler
   const bearer = req.header('Authorization');
   if (!bearer || !bearer.startsWith('Bearer ')) {

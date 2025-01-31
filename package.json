@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "serve": "npx @google-cloud/functions-framework --target=runSync"
+    "serve": "npx @google-cloud/functions-framework --target=doccsSync"
   },
   "author": "",
   "license": "ISC",
