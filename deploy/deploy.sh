@@ -11,8 +11,8 @@ gcloud functions deploy doccs-sync \
   --source=. \
   --entry-point=doccsSync \
   --trigger-http \
-  --memory=256MB \
-  --timeout=540s \
+  --memory=1024MB \
+  --timeout=3600s \
   --env-vars-file=.env.yaml \
   --min-instances=0 \
   --max-instances=1 \

@@ -261,7 +261,7 @@ functions.http('doccsSync', async (req, res) => {
   }
 
   try {
-    logger.info('Starting scheduled sync');
+    res.status(202).send('Sync started');
     await run();
     res.status(200).send('Sync completed');
   } catch (error) {
