@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Create a Pub/Sub topic if it doesn't exist
+gcloud pubsub topics create doccs-sync-trigger || true
+
 # Deploy the function
 gcloud functions deploy doccs-sync \
   --gen2 \
@@ -10,7 +13,7 @@ gcloud functions deploy doccs-sync \
   --region=us-east1 \
   --source=. \
   --entry-point=doccsSync \
-  --trigger-http \
+  --trigger-topic=doccs-sync-trigger \
   --memory=1024MB \
   --timeout=3600s \
   --env-vars-file=.env.yaml \

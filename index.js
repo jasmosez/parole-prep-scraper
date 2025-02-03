@@ -8,6 +8,7 @@ import { CurlEmptyResponseError } from './lib/errors.js';
 import { config } from './config.js';
 import * as functions from '@google-cloud/functions-framework';
 import { StorageService } from './lib/storage-service.js';
+import express from 'express';
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -251,34 +252,42 @@ export const run = async () => {
     }
 };
 
-// Cloud Function handler
-functions.http('doccsSync', async (req, res) => {
-  // Verify the request is from Cloud Scheduler
-  const bearer = req.header('Authorization');
-  if (!bearer || !bearer.startsWith('Bearer ')) {
-    logger.error('Unauthorized request');
-    return res.status(403).send('Unauthorized');
-  }
-
-  try {
-    res.status(202).send('Sync started');
-    await run();
-    res.status(200).send('Sync completed');
-  } catch (error) {
-    logger.error('Sync failed:', error);
-    res.status(500).send('Sync failed');
-  }
-});
-
 // Allow running directly with node
 if (process.argv[1] === new URL(import.meta.url).pathname) {
-  (async () => {
-    try {
-      await run();
-    } catch (err) {
-      logger.error('Script failed:', err);
-      process.exit(1);
-    }
-  })();
+    (async () => {
+        try {
+            await run();
+        } catch (err) {
+            logger.error('Script failed:', err);
+            process.exit(1);
+        }
+    })();
+} else {
+    // Only start Express server if not running directly
+    const app = express();
+    const port = process.env.PORT || 8080;
+
+    // Pub/Sub messages are sent as HTTP POST requests
+    app.post('/', express.json(), async (req, res) => {
+        // Always respond to Pub/Sub immediately
+        res.status(204).send();
+
+        try {
+            // Verify this is a Pub/Sub message
+            if (!req.body || !req.body.message) {
+                logger.error('Invalid Pub/Sub message format');
+                return;
+            }
+
+            await run();
+            logger.info('Sync completed successfully');
+        } catch (error) {
+            logger.error('Sync failed:', error);
+        }
+    });
+
+    app.listen(port, () => {
+        logger.info(`Server listening on port ${port}`);
+    });
 }
 
