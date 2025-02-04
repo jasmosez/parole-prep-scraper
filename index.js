@@ -6,9 +6,7 @@ import { airtable } from './lib/airtable-service.js';
 import { logger } from './lib/logger.js';
 import { CurlEmptyResponseError } from './lib/errors.js';
 import { config } from './config.js';
-import * as functions from '@google-cloud/functions-framework';
 import { StorageService } from './lib/storage-service.js';
-import express from 'express';
 
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
@@ -252,42 +250,16 @@ export const run = async () => {
     }
 };
 
-// Allow running directly with node
+// Run the script unless it's being imported as a module
 if (process.argv[1] === new URL(import.meta.url).pathname) {
     (async () => {
         try {
             await run();
+            process.exit(0);
         } catch (err) {
             logger.error('Script failed:', err);
             process.exit(1);
         }
     })();
-} else {
-    // Only start Express server if not running directly
-    const app = express();
-    const port = process.env.PORT || 8080;
-
-    // Pub/Sub messages are sent as HTTP POST requests
-    app.post('/', express.json(), async (req, res) => {
-        // Always respond to Pub/Sub immediately
-        res.status(204).send();
-
-        try {
-            // Verify this is a Pub/Sub message
-            if (!req.body || !req.body.message) {
-                logger.error('Invalid Pub/Sub message format');
-                return;
-            }
-
-            await run();
-            logger.info('Sync completed successfully');
-        } catch (error) {
-            logger.error('Sync failed:', error);
-        }
-    });
-
-    app.listen(port, () => {
-        logger.info(`Server listening on port ${port}`);
-    });
 }
-
+  
