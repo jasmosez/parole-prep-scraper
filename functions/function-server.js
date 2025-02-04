@@ -1,6 +1,6 @@
 import * as functions from '@google-cloud/functions-framework';
 import pkg from '@google-cloud/run';
-import { logger } from './lib/logger.js';
+import { logger } from '../lib/logger.js';
 const { Jobs } = pkg;
 
 const LOCATION = 'us-east1';

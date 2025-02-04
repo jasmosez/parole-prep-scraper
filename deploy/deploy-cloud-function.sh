@@ -8,7 +8,7 @@ gcloud functions deploy doccs-sync \
   --gen2 \
   --runtime=nodejs20 \
   --region=us-east1 \
-  --source=function-server.js \
+  --source=./functions \
   --entry-point=doccsSync \
   --trigger-http \
   --memory=256MB \
