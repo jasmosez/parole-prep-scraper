@@ -23,6 +23,3 @@ node_modules
 
 # ignore deploy directory
 deploy
-
-# ignore functions directory
-functions

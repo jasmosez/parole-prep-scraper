@@ -12,13 +12,16 @@ JOB_NAME="doccs-sync"
 gcloud builds submit \
   --tag gcr.io/$PROJECT_ID/$JOB_NAME
 
-# Deploy as a Cloud Run Job
-gcloud run jobs create $JOB_NAME \
-  --image gcr.io/$PROJECT_ID/$JOB_NAME \
+# Common job configuration
+JOB_FLAGS="--image gcr.io/$PROJECT_ID/$JOB_NAME \
   --tasks 1 \
   --memory 1024Mi \
   --cpu 1 \
   --max-retries 0 \
   --task-timeout 10800s \
   --region $REGION \
-  --env-vars-file .env.yaml 
+  --env-vars-file .env.yaml"
+
+# Update existing job or create new one
+gcloud run jobs update $JOB_NAME $JOB_FLAGS || \
+gcloud run jobs create $JOB_NAME $JOB_FLAGS 

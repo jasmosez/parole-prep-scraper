@@ -3,15 +3,13 @@
 # Exit on error
 set -e
 
-# Print commands
-set -x
-
 # Configuration
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-east1"
-FUNCTION_NAME="doccs-sync"  # Updated to match deployment
-JOB_NAME="nightly-doccs-sync"
-SCHEDULE="0 0 * * *"  # Nightly at midnight
+JOB_NAME="doccs-sync"
+SCHEDULER_NAME="nightly-doccs-sync"
+SCHEDULE='0 0 * * *'  # Nightly at midnight
+JOB_URI="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/${JOB_NAME}:run"
 
 # Create service account if it doesn't exist
 SERVICE_ACCOUNT="doccs-sync-scheduler@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -21,25 +19,25 @@ if ! gcloud iam service-accounts describe "$SERVICE_ACCOUNT" &>/dev/null; then
         --display-name="Service Account for DOCCS Sync Scheduler"
 fi
 
-# Get the function URL
-FUNCTION_URL=$(gcloud functions describe $FUNCTION_NAME \
-  --gen2 \
-  --region $REGION \
-  --format='value(serviceConfig.uri)')
+# Grant the service account permission to invoke the job
+gcloud run jobs add-iam-policy-binding $JOB_NAME \
+  --member="serviceAccount:$SERVICE_ACCOUNT" \
+  --role="roles/run.invoker" \
+  --region=$REGION
 
-# Create or update Cloud Scheduler job to invoke the function
-gcloud scheduler jobs create http $JOB_NAME \
+# Create or update Cloud Scheduler job
+gcloud scheduler jobs create http $SCHEDULER_NAME \
   --schedule="$SCHEDULE" \
-  --uri="$FUNCTION_URL" \
+  --uri="$JOB_URI" \
   --http-method=POST \
-  --oidc-service-account-email="$SERVICE_ACCOUNT" \
+  --oauth-service-account-email="$SERVICE_ACCOUNT" \
   --location=$REGION || \
-gcloud scheduler jobs update http $JOB_NAME \
+gcloud scheduler jobs update http $SCHEDULER_NAME \
   --schedule="$SCHEDULE" \
-  --uri="$FUNCTION_URL" \
+  --uri="$JOB_URI" \
   --http-method=POST \
-  --oidc-service-account-email="$SERVICE_ACCOUNT" \
+  --oauth-service-account-email="$SERVICE_ACCOUNT" \
   --location=$REGION
 
-echo "Cloud Scheduler job '$JOB_NAME' has been created/updated"
+echo "Cloud Scheduler job '$SCHEDULER_NAME' has been created/updated"
 echo "Schedule: $SCHEDULE"

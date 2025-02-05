@@ -6,12 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "serve": "npx @google-cloud/functions-framework --target=doccsSync"
+    "deploy": "source deploy/deploy.sh"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.4.5",
     "@google-cloud/run": "^1.5.0",
     "@google-cloud/storage": "^7.15.0",
     "airtable": "^0.12.2",

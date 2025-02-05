@@ -188,6 +188,9 @@ export const run = async () => {
         enableTypecast: config.enableTypecast
     });
 
+    // Set configuration settings in report
+    report.setConfigSettings(config);
+
     // Initialize storage service
     const storageService = new StorageService(config.googleCloud.bucketName);
     await storageService.validateCredentials();
