@@ -7,7 +7,7 @@ import { logger } from './lib/logger.js';
 import { CurlEmptyResponseError } from './lib/errors.js';
 import { config } from './config.js';
 import { StorageService } from './lib/storage-service.js';
-
+import { EmailService } from './lib/email-service.js';
 const processBatch = async (records, startIndex, batchSize, totalRecords) => {
     const batch = records.slice(startIndex, startIndex + batchSize);
     await Promise.all(batch.map((record, index) => 
@@ -237,15 +237,24 @@ export const run = async () => {
 
         // Create and save each report to Cloud Storage
         await storageService.saveReports(report, config.environment);
+        
+        // send an email to the team with the staff report
+        const emailService = new EmailService();
+        await emailService.sendPreconfiguredEmail(report.getTextReport());
+        
 
         // if any of the fields corresponding to causeAlert === true, then log an alert
-        const alertFieldNames = Object.entries(airtable.getAllValidatedMappings())
-            .filter(([_, field]) => field.causeAlert)
-            .map(([_, field]) => field.fieldName);
+        // const alertFieldNames = Object.entries(airtable.getAllValidatedMappings())
+        //     .filter(([_, field]) => field.causeAlert)
+        //     .map(([_, field]) => field.fieldName);
 
-        if (Object.keys(report.summary.byFieldChange).some(field => alertFieldNames.includes(field))) {
-            logger.info('Report contains causeAlert fields', { causeAlert: true });
-        }
+        // if (Object.keys(report.summary.byFieldChange).some(field => alertFieldNames.includes(field))) {
+        //     logger.info('Report contains causeAlert fields, sending preconfigured email', { causeAlert: true });
+            
+        //     // send an email to the team with the staff report
+        //     const emailService = new EmailService();
+        //     await emailService.sendPreconfiguredEmail(report.getTextReport());
+        // }
 
     } catch (err) {
         logger.error('Script failed:', err);

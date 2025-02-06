@@ -204,5 +204,15 @@ export const config = {
     environment: environment,
     googleCloud: {
         bucketName: process.env.GOOGLE_CLOUD_BUCKET_NAME
+    },
+    email: {
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: parseInt(process.env.SMTP_PORT, 10),
+        smtpSecure: process.env.SMTP_SECURE === 'true',
+        smtpUser: process.env.SMTP_USER,
+        smtpPassword: process.env.SMTP_PASSWORD,
+        fromAddress: process.env.EMAIL_FROM_ADDRESS,
+        staffReportTo: process.env.STAFF_REPORT_EMAIL_TO,
+        staffReportSubject: process.env.STAFF_REPORT_EMAIL_SUBJECT || 'Staff Report'
     }
 }; 
