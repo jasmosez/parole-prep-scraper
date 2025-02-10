@@ -147,7 +147,7 @@ const updateRecordIfNeeded = async (record, changes, din) => {
                 outcome: RecordOutcome.CHANGED,
                 changes
             });
-            logger.debug('Record updated', { din });
+            logger.debug(config.enableUpdateRecords ? 'Record updated' : 'Record would have been updated (dry run)', { din });
         } else {
             report.addRecord({
                 recordId: record.id,

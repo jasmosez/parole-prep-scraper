@@ -8,7 +8,7 @@ PROJECT_ID=$(gcloud config get-value project)
 REGION="us-east1"
 JOB_NAME="doccs-sync"
 SCHEDULER_NAME="nightly-doccs-sync"
-SCHEDULE='0 0 * * *'  # Nightly at midnight
+SCHEDULE='0 2 * * *'  # Nightly at 2am GMT
 JOB_URI="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/${JOB_NAME}:run"
 
 # Create service account if it doesn't exist
