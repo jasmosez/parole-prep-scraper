@@ -98,9 +98,6 @@ const calculateChanges = (record, data, din) => {
             
             // Check if updating a value with an empty string
             if (!doccsValue || doccsValue === '') {
-                // TODO: not sure we need this even as a debug message
-                // const message = `DOCCS field value missing. No update: ${fieldMapping.fieldName}`;
-                // logger.debug(message);
                 continue;
             }
 
@@ -122,13 +119,6 @@ const calculateChanges = (record, data, din) => {
                 recordId: record.id,
                 field: fieldMapping.fieldName  // Add field name for better context
             });
-            // Add specific field error to changes array instead of throwing
-            // TODO: pretty sure we don't want this as it throws off our byFieldChange numbers
-            // changes.push({
-            //     field: fieldMapping.fieldName,
-            //     error: error.message
-            // });
-            // Continue processing other fields instead of throwing
             continue;
         }
     }
@@ -225,14 +215,14 @@ export const run = async () => {
             report.addBatchTime(batchIndex, start, end);
             
             if (i + BATCH_SIZE < records.length) {
-                // TODO: remove this once we deploy to prod
                 logger.logReport(report);
+                // TODO: remove this once we deploy to prod
                 logger.info(`Waiting before next batch`, { delay: BATCH_DELAY });
                 await delay(BATCH_DELAY);
             }
         }
 
-        // TODO: remove this once we deploy to prod
+        // Log final report
         logger.logReport(report, true);
 
         // Create and save each report to Cloud Storage

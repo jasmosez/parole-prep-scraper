@@ -214,5 +214,6 @@ export const config = {
         fromAddress: process.env.EMAIL_FROM_ADDRESS,
         staffReportTo: process.env.STAFF_REPORT_EMAIL_TO,
         staffReportSubject: process.env.STAFF_REPORT_EMAIL_SUBJECT || 'Staff Report'
-    }
+    },
+    debug: process.env.DEBUG === 'true'
 }; 
