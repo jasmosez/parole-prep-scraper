@@ -189,9 +189,6 @@ export const run = async () => {
     await airtable.initialize();
     
     try {
-        // take a snapshot of the base before we start
-        await airtable.takeSnapshot();
-
         // get all records
         let records = airtable.getAllRecords()
 
