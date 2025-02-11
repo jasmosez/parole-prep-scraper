@@ -5,6 +5,16 @@ It is deployed as a Google Cloud Run Job and triggered by a Google Cloud Schedul
 
 See [flowchart here](https://www.figma.com/board/teQ2Bl50kHMZbZyWdZFG8F/Parole-Prep-Scraper?node-id=0-1&t=IyThlW2U0mUs4KDE-1) for a high-level overview of the process.
 
+## Prerequisites
+
+- Node.js
+- gcloud CLI (Google Cloud SDK)
+- Airtable API key
+- Airtable base ID
+- Airtable table ID
+- Airtable view ID
+- Google Cloud Storage bucket -- assumes Application Default Credentials are set up to access the bucket
+
 ## Environment
 
 The config file can handle field mappings for each of three environments: `test`, `staging`, and `production` and expects to find the environment in the `ENV` variable. If `ENV` is not set, the app will run in `test` mode.
@@ -28,15 +38,6 @@ Some helpful flags for development:
 - `BATCH_DELAY=1000` will specify the number of milliseconds to wait between batches; this is useful for tweaking behavior at it pertains (the unknown DOCCS) to API limits
 
 You can also set `DEBUG=true` to get more verbose logging.
-
-## Prerequisites
-
-- Node.js
-- Airtable API key
-- Airtable base ID
-- Airtable table ID
-- Airtable view ID
-- Google Cloud Storage bucket -- assumes Application Default Credentials are set up  
 
 ## Publishing to Google Cloud
 
